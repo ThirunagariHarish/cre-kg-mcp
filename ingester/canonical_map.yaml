@@ -1,0 +1,107 @@
+# Canonical taxonomy mapping.
+# Each top-level key is a taxonomy kind. Under it, the canonical form maps to a
+# list of alias strings (lower-cased). Aliases are matched case-insensitively
+# at runtime. Add new aliases freely; the resolver never errors on no-match —
+# it logs a warning and keeps the raw value as the canonical name.
+
+markets:
+  dallas-fort worth:
+    - dfw
+    - dallas
+    - "dallas/ft worth"
+    - "dallas ft worth"
+    - "dallas-fort worth"
+    - "dallas fort worth"
+  chicago:
+    - chicago
+    - chi
+  new york:
+    - "new york"
+    - nyc
+    - "new york city"
+    - ny
+  los angeles:
+    - "los angeles"
+    - la
+    - socal
+  atlanta:
+    - atlanta
+    - atl
+  houston:
+    - houston
+    - hou
+  phoenix:
+    - phoenix
+    - phx
+  seattle:
+    - seattle
+    - sea
+  boston:
+    - boston
+    - bos
+  miami:
+    - miami
+
+asset_classes:
+  industrial:
+    - industrial
+    - ind
+    - "logistics & industrial"
+    - logistics
+    - warehouse
+    - flex-industrial
+  office:
+    - office
+    - "off"
+    - "office space"
+  retail:
+    - retail
+    - "ret"
+    - "shopping center"
+    - "strip mall"
+  multifamily:
+    - multifamily
+    - "multi-family"
+    - mf
+    - apartment
+    - residential
+  mixed-use:
+    - "mixed-use"
+    - "mixed use"
+    - mixeduse
+  healthcare:
+    - healthcare
+    - medical
+    - "medical office"
+  hotel:
+    - hotel
+    - hospitality
+  land:
+    - land
+
+service_lines:
+  tenantrep:
+    - "tenant rep"
+    - "tenant representation"
+    - tr
+    - tenantrep
+  landlord-rep:
+    - "landlord rep"
+    - "landlord representation"
+    - lr
+  capital-markets:
+    - "capital markets"
+    - "cap markets"
+    - investment-sales
+    - "investment sales"
+  property-management:
+    - "property management"
+    - pm
+  debt-equity:
+    - "debt & equity"
+    - "debt equity"
+    - "debt and equity"
+    - de
+  valuation:
+    - valuation
+    - appraisal

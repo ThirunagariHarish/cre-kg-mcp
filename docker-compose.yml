@@ -1,0 +1,49 @@
+# CRE Knowledge Graph — local development stack
+# Phase 1: Neo4j 5.15 Community + GDS plugin
+#
+# GDS risk mitigation (tech-plan §Highest risks):
+#   Neo4j 5.15 requires GDS 2.6.x. The plugin is mounted as a JAR from a
+#   pre-built image layer. If the healthcheck `CALL gds.version()` fails,
+#   Neo4j is not considered healthy and dependent services won't start.
+#
+# Usage:
+#   docker compose up -d
+#   docker compose logs -f neo4j
+#   docker compose down -v   # destroys neo4j_data volume (rollback)
+
+services:
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: cre-neo4j
+    ports:
+      - "7474:7474"   # HTTP Browser
+      - "7687:7687"   # Bolt
+    environment:
+      NEO4J_AUTH: "neo4j/${NEO4J_PASSWORD:-hackathon_local_only}"
+      NEO4J_PLUGINS: '["graph-data-science"]'
+      # Neo4j 5.x env var naming: dots -> double-underscore
+      # server.memory.heap.max_size -> NEO4J_server_memory_heap_max__size
+      NEO4J_server_memory_heap_max__size: "4G"
+      NEO4J_dbms_security_procedures_unrestricted: "gds.*"
+      NEO4J_dbms_security_procedures_allowlist: "gds.*"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - |
+          cypher-shell -u neo4j -p "${NEO4J_PASSWORD:-hackathon_local_only}" \
+            "CALL gds.version() YIELD version RETURN version" \
+            2>&1 | grep -v "^$" | tail -1
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+volumes:
+  neo4j_data:
+    driver: local
+  neo4j_logs:
+    driver: local
