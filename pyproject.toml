@@ -1,6 +1,6 @@
 [project]
 name = "cre-kg-mcp"
-version = "1.0.0-hackathon"
+version = "1.0.0+hackathon"
 description = "CRE Ontology Knowledge Graph MCP Server — Hackathon v1.0.0"
 requires-python = ">=3.11"
 dependencies = [
