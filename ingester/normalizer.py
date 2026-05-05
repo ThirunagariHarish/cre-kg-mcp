@@ -210,8 +210,64 @@ def broker_key_from_spoc(row: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
+# BUG-005: Email-domain to firm name mapping
+# Used when broker row has no FIRM_NAME column.
+# ---------------------------------------------------------------------------
+_EMAIL_DOMAIN_TO_FIRM: dict[str, str] = {
+    "cbre.com": "CBRE",
+    "jll.com": "JLL",
+    "cushman&wakefield.com": "Cushman & Wakefield",
+    "cushmanwakefield.com": "Cushman & Wakefield",
+    "savills.com": "Savills",
+    "colliers.com": "Colliers",
+    "eastdilsecured.com": "Eastdil Secured",
+    "ngkf.com": "Newmark",
+    "nmrk.com": "Newmark",
+    "newmark.com": "Newmark",
+    "knightfrank.com": "Knight Frank",
+    "lee-associates.com": "Lee & Associates",
+    "marcusmillichap.com": "Marcus & Millichap",
+    "cbiz.com": "CBIZ",
+}
+
+
+def firm_from_email(email: str) -> str | None:
+    """
+    BUG-005 FIX: Derive firm name from email domain when FIRM_NAME is absent.
+    Returns None if the domain is not in the known map.
+    """
+    if not email:
+        return None
+    parts = email.strip().lower().split("@")
+    if len(parts) != 2:
+        return None
+    domain = parts[1]
+    return _EMAIL_DOMAIN_TO_FIRM.get(domain)
+
+
+# ---------------------------------------------------------------------------
 # Taxonomy canonicalization
 # ---------------------------------------------------------------------------
+
+def _strip_submarket_prefix(value: str) -> list[str]:
+    """
+    BUG-003 FIX: For market-kind lookups, generate candidate strings by
+    stripping leading submarket/neighborhood tokens from compound names.
+
+    "back bay boston"  → tries "back bay boston", "bay boston", "boston"
+    "downtown manhattan" → tries "downtown manhattan", "manhattan"
+    "soma san francisco" → tries "soma san francisco", "san francisco"
+
+    Returns candidates in order: full value first, then progressively shorter
+    suffix slices (dropping one token at a time from the left).
+    """
+    tokens = value.strip().lower().split()
+    candidates = []
+    # Start with full value, then drop one leading token at a time
+    for i in range(len(tokens)):
+        candidates.append(" ".join(tokens[i:]))
+    return candidates
+
 
 def taxonomy_key(value: str, kind: str) -> str:
     """
@@ -219,11 +275,30 @@ def taxonomy_key(value: str, kind: str) -> str:
 
     If the value is unmapped, the raw lowercased value is returned and a
     warning is logged so operators can extend canonical_map.yaml.
+
+    BUG-003 FIX: For markets, if the full value is unmapped and contains 2+
+    tokens, progressively strip leading tokens to find a canonical match.
+    This maps submarket-prefixed names like "back bay boston" → "boston" and
+    "downtown manhattan" → "new york" without editing canonical_map.yaml.
     """
     normalized = value.strip().lower()
     result = _ALIAS_TO_CANONICAL.get(normalized)
     if result is not None:
         return result[1]
+
+    # BUG-003: prefix-stripping fallback for market names with 2+ tokens
+    if kind == "markets" and " " in normalized:
+        for candidate in _strip_submarket_prefix(normalized)[1:]:  # skip full value (already tried)
+            result = _ALIAS_TO_CANONICAL.get(candidate)
+            if result is not None and result[0] == "markets":
+                log.info(
+                    "market_prefix_stripped",
+                    raw_value=value,
+                    candidate=candidate,
+                    canonical=result[1],
+                )
+                return result[1]
+
     log.warning("unmapped_taxonomy_value", kind=kind, raw_value=value)
     return normalized
 

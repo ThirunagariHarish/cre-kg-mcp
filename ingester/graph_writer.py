@@ -145,6 +145,7 @@ SET b.name          = $name,
     b.email         = $email,
     b.phone         = $phone,
     b.firm_name     = $firm_name,
+    b.firm          = $firm_name,
     b.markets       = $markets,
     b.specializations = $specializations,
     b.deal_volume_usd = $deal_volume_usd,
@@ -178,9 +179,14 @@ MERGE (b)-[:SPECIALIZES_IN]->(a)
 def upsert_broker(session: Session, row: dict, broker_key: str, taxonomy_key_fn) -> None:
     # CRE_BROKERS actual columns: PRIMARY_MARKET, SECONDARY_MARKET, SPECIALIZATION,
     # ASSET_CLASS_FOCUS, CERTIFICATION, FIRM_NAME, FULL_NAME, YTD_DEAL_VOLUME
+    from ingester.normalizer import firm_from_email  # BUG-005: email-domain fallback
     firm_raw = (
         row.get("FIRM_NAME") or row.get("FIRM") or row.get("firm") or ""
     ).strip()
+    # BUG-005 FIX: if no firm in data, derive from email domain
+    if not firm_raw:
+        email_val = (row.get("EMAIL") or row.get("email") or "").strip().lower()
+        firm_raw = firm_from_email(email_val) or ""
 
     # Build markets list from PRIMARY_MARKET + SECONDARY_MARKET
     market_vals = []
@@ -428,9 +434,20 @@ ON CREATE SET pu.stage                  = $stage,
               pu.outcome                 = $outcome,
               pu.outcome_date            = $outcome_date,
               pu.created_date            = $created_date,
+              pu.market                  = $market,
+              pu.asset_class             = $asset_class,
+              pu.service_line            = $service_line,
+              pu.deal_size_sf            = $deal_size_sf,
+              pu.expected_revenue_usd    = $expected_revenue_usd,
               pu.last_seen               = datetime()
 ON MATCH  SET pu.stage                  = $stage,
               pu.probability_pct         = $probability_pct,
+              pu.outcome                 = $outcome,
+              pu.market                  = $market,
+              pu.asset_class             = $asset_class,
+              pu.service_line            = $service_line,
+              pu.deal_size_sf            = $deal_size_sf,
+              pu.expected_revenue_usd    = $expected_revenue_usd,
               pu.last_seen               = datetime()
 MERGE (pu)-[:FOR]->(c)
 RETURN pu.pursuit_id AS id
@@ -461,17 +478,50 @@ def upsert_pursuit(session: Session, row: dict, c_key: str, broker_key_fn, taxon
         log.warning("pursuit_missing_id", row_keys=list(row.keys()))
         return
 
+    # BUG-004 FIX: Map actual CRE_PURSUITS column names to graph properties.
+    # PURSUIT_STAGE (not STAGE), WIN_LOSS_OUTCOME (not OUTCOME), PROBABILITY_PCT,
+    # MARKET, LINE_OF_BUSINESS for service_line, REVENUE_RECOGNIZED_AT_SIGNING.
+    stage = (
+        row.get("PURSUIT_STAGE") or row.get("STAGE") or row.get("stage") or ""
+    ).strip()
+    outcome = (
+        row.get("WIN_LOSS_OUTCOME") or row.get("OUTCOME") or row.get("outcome") or None
+    )
+    if outcome:
+        outcome = outcome.strip() or None
+    probability = _coerce_float(
+        row.get("PROBABILITY_PCT") or row.get("PROBABILITY") or row.get("probability")
+    )
+    revenue = _coerce_float(
+        row.get("REVENUE_RECOGNIZED_AT_SIGNING")
+        or row.get("REVENUE_PROJECTION")
+        or row.get("revenue_projection")
+    )
+    market_raw = (row.get("MARKET") or row.get("market") or "").strip()
+    market_val = taxonomy_key_fn(market_raw, "markets") if market_raw else None
+    # CRE_PURSUITS has no ASSET_CLASS column; derive from LINE_OF_BUSINESS if possible
+    service_line_raw = (
+        row.get("SERVICE_TYPE") or row.get("LINE_OF_BUSINESS") or row.get("service_line") or ""
+    ).strip()
+    service_line_val = taxonomy_key_fn(service_line_raw, "service_lines") if service_line_raw else None
+    deal_size = _coerce_int(row.get("DEAL_SIZE_SF") or row.get("deal_size_sf"))
+
     session.run(
         PURSUIT_CYPHER,
         client_key=c_key,
         client_name=client_display_name(row),  # B3: ACCOUNT_NAME → ORGANIZATION → CLIENT_NAME
         pursuit_id=pursuit_id,
-        stage=(row.get("STAGE") or row.get("stage") or "").strip(),
-        probability_pct=_coerce_float(row.get("PROBABILITY") or row.get("probability")),
-        revenue_projection_usd=_coerce_float(row.get("REVENUE_PROJECTION") or row.get("revenue_projection")),
-        outcome=(row.get("OUTCOME") or row.get("outcome") or None),
+        stage=stage,
+        probability_pct=probability,
+        revenue_projection_usd=revenue,
+        outcome=outcome,
         outcome_date=str(row.get("OUTCOME_DATE") or row.get("outcome_date") or "") or None,
-        created_date=str(row.get("CREATED_DATE") or row.get("created_date") or "") or None,
+        created_date=str(row.get("CREATED_DATE") or row.get("PROSPECT_INPUT_DATE") or row.get("created_date") or "") or None,
+        market=market_val,
+        asset_class=None,  # CRE_PURSUITS has no ASSET_CLASS column
+        service_line=service_line_val,
+        deal_size_sf=deal_size,
+        expected_revenue_usd=revenue,
     )
 
     assigned_broker = (row.get("ASSIGNED_BROKER") or row.get("assigned_broker") or "").strip()
@@ -486,13 +536,13 @@ def upsert_pursuit(session: Session, row: dict, c_key: str, broker_key_fn, taxon
             role=role,
         )
 
-    service_line_raw = (row.get("SERVICE_LINE") or row.get("service_line") or "").strip()
-    if service_line_raw:
-        sl_name = taxonomy_key_fn(service_line_raw, "service_lines")
+    # BUG-004: use service_line_val derived above; SERVICE_TYPE and LINE_OF_BUSINESS
+    # are the actual CRE_PURSUITS columns (no SERVICE_LINE column exists)
+    if service_line_val:
         session.run(
             PURSUIT_SERVICE_LINE_CYPHER,
             pursuit_id=pursuit_id,
-            service_line_name=sl_name,
+            service_line_name=service_line_val,
         )
 
 
@@ -513,7 +563,8 @@ MERGE (b)-[s:SPOC_FOR {service_line: $service_line, asset_class: $asset_class}]-
 SET s.geography      = $geography,
     s.effective_from = $effective_from,
     s.expires_on     = $expires_on,
-    s.is_active      = $is_active
+    s.is_active      = $is_active,
+    s.raw_service_line = $raw_service_line
 RETURN s.service_line AS sl
 """
 
@@ -521,8 +572,18 @@ RETURN s.service_line AS sl
 def upsert_spoc(session: Session, row: dict, b_key: str, c_key: str, taxonomy_key_fn) -> None:
     from datetime import date
 
-    expires_on_raw = row.get("EXPIRES_ON") or row.get("expires_on")
-    effective_from_raw = row.get("EFFECTIVE_FROM") or row.get("effective_from")
+    # BUG-006 FIX: CRE_SPOC uses SPOC_EXPIRATION_DATE (not EXPIRES_ON),
+    # no EFFECTIVE_FROM column, and BUSINESS_LINE (not SERVICE_LINE) for service.
+    expires_on_raw = (
+        row.get("SPOC_EXPIRATION_DATE")
+        or row.get("EXPIRES_ON")
+        or row.get("expires_on")
+    )
+    effective_from_raw = (
+        row.get("EFFECTIVE_FROM")
+        or row.get("effective_from")
+        or row.get("CREATED_DATE")
+    )
 
     # Determine if SPOC is active
     is_active = True
@@ -537,21 +598,55 @@ def upsert_spoc(session: Session, row: dict, b_key: str, c_key: str, taxonomy_ke
         except Exception:
             is_active = True
 
-    service_line_raw = (row.get("SERVICE_LINE") or row.get("service_line") or "").strip()
+    # BUG-006 FIX: BUSINESS_LINE is the service_line column in CRE_SPOC
+    service_line_raw = (
+        row.get("BUSINESS_LINE")
+        or row.get("SERVICE_LINE")
+        or row.get("service_line")
+        or row.get("SERVICES")
+        or ""
+    ).strip()
     sl_name = taxonomy_key_fn(service_line_raw, "service_lines") if service_line_raw else "unknown"
 
     asset_class_raw = (row.get("ASSET_CLASS") or row.get("asset_class") or "").strip()
     ac_name = taxonomy_key_fn(asset_class_raw, "asset_classes") if asset_class_raw else None
 
+    # BUG-006 FIX: Use SPOC_EMPLOYEE_NAME for broker_name; ON CREATE SET only in Cypher
+    # ensures existing Broker.name (from CRE_BROKERS) is NOT overwritten.
+    # The SPOC_CYPHER only sets b.name on CREATE (new broker nodes), not on MATCH.
+    broker_name = (
+        row.get("SPOC_EMPLOYEE_NAME")
+        or row.get("BROKER_NAME")
+        or row.get("broker_name")
+        or ""
+    ).strip()
+
+    # Geography from GEO or STATE_CITY or REGION
+    geography = (
+        row.get("GEO")
+        or row.get("STATE_CITY")
+        or row.get("GEOGRAPHY")
+        or row.get("geography")
+        or None
+    )
+
+    account_name = (
+        row.get("ACCOUNT_NAME")
+        or row.get("CLIENT_NAME")
+        or row.get("client_name")
+        or ""
+    ).strip()
+
     session.run(
         SPOC_CYPHER,
         broker_key=b_key,
-        broker_name=(row.get("BROKER_NAME") or row.get("broker_name") or "").strip(),
+        broker_name=broker_name,
         client_key=c_key,
-        client_name=(row.get("CLIENT_NAME") or row.get("client_name") or "").strip(),
-        account_type=(row.get("ACCOUNT_TYPE") or row.get("account_type") or None),
+        client_name=account_name,
+        account_type=(row.get("ACCOUNT_TYPE") or row.get("SPOC_TYPE") or row.get("account_type") or None),
         service_line=sl_name,
-        geography=(row.get("GEOGRAPHY") or row.get("geography") or None),
+        raw_service_line=service_line_raw or None,
+        geography=geography,
         asset_class=ac_name,
         effective_from=str(effective_from_raw) if effective_from_raw else None,
         expires_on=str(expires_on_raw) if expires_on_raw else None,

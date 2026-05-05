@@ -83,7 +83,7 @@ RETURN
   ac.name         AS asset_class_name,
   lease_count,
   latest_lease
-ORDER BY latest_lease DESC NULLS LAST
+ORDER BY CASE WHEN latest_lease IS NULL THEN 1 ELSE 0 END, latest_lease DESC
 LIMIT $limit
 """
 

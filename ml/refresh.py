@@ -65,14 +65,15 @@ def _get_last_run_time(session) -> datetime | None:
 
 
 def _update_last_run_time(session, run_at: datetime) -> None:
-    """Upsert :MLRunMeta {key:'global'} with the current run timestamp."""
+    """Upsert :MLRunMeta {key:'global'} with the current run timestamp.
+    BUG-008 FIX: Use datetime() directly rather than datetime($run_at) with an
+    ISO string so the property is stored as a Neo4j datetime type, not a string.
+    health_check.py reads m.last_run_at and calls .to_native() — that only works
+    if the stored value is a native Neo4j datetime, not a string.
+    """
     session.run(
-        """
-        MERGE (m:MLRunMeta {key: $key})
-        SET m.last_run_at = datetime($run_at)
-        """,
+        "MERGE (m:MLRunMeta {key: $key}) SET m.last_run_at = datetime()",
         key=ML_META_KEY,
-        run_at=run_at.isoformat(),
     )
 
 
