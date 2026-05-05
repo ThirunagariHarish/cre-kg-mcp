@@ -3,7 +3,7 @@
 Commercial Real Estate knowledge graph powered by Neo4j + GDS, seeded from
 Snowflake, and exposed to Claude Desktop via MCP tools.
 
-**Hackathon Phase 2** — Streaming insight pipeline + `Insight` nodes with body embeddings + `semantic_search` MCP tool.
+**Hackathon Phase 3** — ML enrichment: Node2Vec embeddings, Louvain community detection, link prediction + `traverse_graph`, `list_communities`, `predict_links` MCP tools.
 
 ---
 
@@ -173,6 +173,124 @@ ORDER BY edges DESC;
 MATCH (i:Insight) WHERE i.embedding IS NOT NULL RETURN count(i) AS with_embeddings;
 // Expected: 50
 ```
+
+---
+
+## Phase 3 — ML Enrichment
+
+Phase 3 adds graph ML enrichment via Neo4j GDS: Node2Vec embeddings (128-dim), Louvain community detection, and link prediction. Three new MCP tools expose the results to Claude.
+
+### Running the ML refresh worker (long-lived)
+
+```bash
+# Start the ML refresh worker — runs embeddings → communities → link prediction immediately,
+# then on a 10-minute cadence (or immediately if ≥50 new insights since last run).
+python -m ml.refresh
+```
+
+Expected runtime on seeded data:
+- Node2Vec embeddings: ~2 minutes (80 walk length, 128 dims, all entity nodes)
+- Louvain communities: ~5-10 seconds
+- Link prediction (adamicAdar): ~10-30 seconds
+
+### Running individual ML steps
+
+```bash
+# Node2Vec embeddings only — writes 'node2vec_embedding' to all projected nodes
+python -m ml.embeddings
+
+# Louvain communities only — writes 'community_id' to all projected nodes
+python -m ml.communities
+
+# Link prediction only — writes :PredictedLink nodes
+python -m ml.link_prediction
+```
+
+### Verifying ML enrichment in Neo4j
+
+```cypher
+-- Embeddings: verify node2vec_embedding property exists on Broker nodes
+MATCH (n:Broker) WHERE n.node2vec_embedding IS NOT NULL RETURN count(n);
+-- Expected: > 0 after ml.embeddings runs
+
+-- Communities: verify community_id written
+MATCH (n:Broker) WHERE n.community_id IS NOT NULL RETURN count(n);
+MATCH (n:Property) WHERE n.community_id IS NOT NULL RETURN count(n);
+
+-- Top communities by size
+MATCH (n) WHERE n.community_id IS NOT NULL
+WITH n.community_id AS cid, count(n) AS sz ORDER BY sz DESC LIMIT 5
+RETURN cid, sz;
+
+-- Link prediction: count PredictedLink nodes
+MATCH (pl:PredictedLink) RETURN count(pl) AS total;
+-- Expected: > 10
+
+-- Last ML run time
+MATCH (m:MLRunMeta {key: 'global'}) RETURN m.last_run_at;
+```
+
+### New MCP tools (Phase 3)
+
+These tools are auto-discovered by the MCP server — no registration change needed.
+
+#### `list_communities`
+
+Ask Claude: **"List the top 5 graph communities and their dominant markets"**
+
+```json
+{
+  "min_size": 5,
+  "limit": 10,
+  "include_members_sample": true
+}
+```
+
+Returns communities with `community_id`, `size`, and sample members (id/label/name).
+Returns `DEGRADED` if Louvain has not yet run.
+
+#### `predict_links`
+
+Ask Claude: **"Show predicted broker-property affinities"**
+
+```json
+{
+  "to_label": "Property",
+  "from_node_id": "email::jane@cbre.com",
+  "min_score": 0.5,
+  "k": 10
+}
+```
+
+Reads from `:PredictedLink` nodes written by `ml.link_prediction`.
+Returns `DEGRADED` if link prediction has not yet run.
+
+#### `traverse_graph`
+
+Ask Claude: **"Show all tenants connected to this landlord's portfolio"**
+
+```json
+{
+  "start_node_id": "email::jane@cbre.com",
+  "start_label": "Broker",
+  "max_hops": 2,
+  "relationship_types": ["BROKERED_BY", "ON"],
+  "node_cap": 100
+}
+```
+
+BFS traversal capped at **200 nodes / 500 edges** (Atlas locked). Returns `truncated: true`
+when cap is hit; prunes by BFS order so closest-to-start nodes are kept.
+Max 3 hops enforced regardless of `max_hops` parameter.
+
+### Note on embedding dimensions (M-P2-1)
+
+Phase 2 Insight nodes have 384-dim embeddings from `sentence-transformers/all-MiniLM-L6-v2`
+stored as `embedding`. Phase 3 graph-structural nodes (Broker, Property, Tenant, etc.) have
+128-dim Node2Vec embeddings stored as `node2vec_embedding`. These are separate properties
+to avoid collision. `semantic_search` with `anchor_node_id` works for Broker/Property/Tenant
+(reads `embedding` if present, else `node2vec_embedding`). Text-query similarity for
+non-Insight labels remains DEGRADED until Phase 4 unification.
 
 ---
 
