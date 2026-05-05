@@ -1,14 +1,15 @@
 # CRE Ontology Knowledge Graph MCP Server
 
+Status: v1.0.0-hackathon | 9 MCP tools | 304 unit tests passing
+
 Commercial Real Estate knowledge graph powered by Neo4j + GDS, seeded from
 Snowflake, and exposed to Claude Desktop via MCP tools.
-
-**Hackathon Phase 4** — High-level NL tools: `find_matching_properties_for_insight`,
-`suggest_next_best_actions_for_deal`, `recommend_broker_for_deal` + demo script.
 
 ---
 
 ## Quick Start (under 10 minutes)
+
+Get from `git clone` to a live Claude Desktop session with 9 MCP tools in five steps. Full install guide with troubleshooting is in `INSTALL.md`.
 
 ### Prerequisites
 
@@ -110,7 +111,7 @@ After restart you should see **9 tools** available:
 
 Ask Claude: **"Run a health check on the CRE graph"**
 
-#### Sample Claude prompts for the 3 canonical questions
+### 5. Verify with the 3 canonical prompts
 
 **Q1 — Finding matching properties from a market insight:**
 ```
@@ -460,6 +461,9 @@ Phase 4 added 3 high-level NL tools: `find_matching_properties_for_insight`,
 ├── docker-compose.yml           # Neo4j 5.15 + GDS
 ├── pyproject.toml               # uv/hatch Python project
 ├── Makefile                     # bootstrap / backfill / mcp / test targets
+├── CHANGELOG.md                 # Keep a Changelog format
+├── RELEASE_NOTES.md             # Hackathon release narrative
+├── INSTALL.md                   # 5-minute install guide
 ├── examples/
 │   └── claude_desktop_config.json  # Claude Desktop MCP config snippet
 ├── scripts/
