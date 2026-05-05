@@ -14,7 +14,7 @@ dependencies = [
     "click>=8.1.7",
     "apscheduler>=3.10.4",
     "sentence-transformers>=3.0.0,<4.0.0",
-    "graphdatascience>=1.8,<2.0",
+    "graphdatascience>=1.8,<1.12",
 ]
 
 [project.optional-dependencies]

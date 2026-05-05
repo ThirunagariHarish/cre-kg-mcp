@@ -164,7 +164,9 @@ class TestTopCommunities:
         assert len(result) <= 3
 
     def test_entry_has_required_keys(self):
-        rows = [{"cid": 7, "sz": 50, "samples": [{"id": "b1", "label": "Broker"}]}]
+        # M-P3-6 FIX: top_communities now returns members_sample as [{id, label, name}]
+        # consistent with list_communities._node_ref and api-contracts.md §8 spec.
+        rows = [{"cid": 7, "sz": 50, "samples": [{"id": "b1", "label": "Broker", "name": "Jane Liu"}]}]
         row_mocks = []
         for r in rows:
             row = MagicMock()
@@ -184,8 +186,14 @@ class TestTopCommunities:
         entry = result[0]
         assert "community_id" in entry
         assert "size" in entry
-        assert "sample_member_ids" in entry
-        assert "sample_member_labels" in entry
+        # M-P3-6: shape is now members_sample: [{id, label, name}]
+        assert "members_sample" in entry
+        assert isinstance(entry["members_sample"], list)
+        if entry["members_sample"]:
+            member = entry["members_sample"][0]
+            assert "id" in member
+            assert "label" in member
+            assert "name" in member
 
     def test_empty_db_returns_empty_list(self):
         session_mock = MagicMock()

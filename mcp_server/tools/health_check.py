@@ -97,6 +97,40 @@ def _get_edge_counts(session) -> dict[str, int]:
     return {r["rel_type"]: r["cnt"] for r in result}
 
 
+def _get_ml_freshness(session) -> tuple[str | None, bool]:
+    """
+    B-P3-5 FIX: Query :MLRunMeta {key:'global'} for last_ml_run_at.
+    Returns (last_ml_run_at_iso_str_or_None, ml_freshness_warning).
+    ml_freshness_warning is True when last run was >30 min ago (architecture §10).
+    """
+    from datetime import datetime, timezone, timedelta
+
+    try:
+        result = session.run(
+            "MATCH (m:MLRunMeta {key: 'global'}) RETURN m.last_run_at AS last_ml_run_at"
+        )
+        row = result.single()
+        if row is None or row["last_ml_run_at"] is None:
+            return None, False
+
+        val = row["last_ml_run_at"]
+        if hasattr(val, "to_native"):
+            dt = val.to_native()
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+        else:
+            return None, False
+
+        now = datetime.now(timezone.utc)
+        age = now - dt
+        # Architecture §10: ml_freshness_warning when >30 min stale
+        ml_freshness_warning = age > timedelta(minutes=30)
+        return dt.isoformat(), ml_freshness_warning
+    except Exception as exc:
+        log.warning("ml_freshness_check_failed", error=str(exc))
+        return None, False
+
+
 async def run_health_check(driver) -> dict[str, Any]:
     """
     Execute health_check and return the response dict.
@@ -108,8 +142,11 @@ async def run_health_check(driver) -> dict[str, Any]:
             node_counts = _get_node_counts(session)
             edge_counts = _get_edge_counts(session)
             insight_age_minutes, freshness_warnings = _get_latest_insight_age_minutes(session)
+            last_ml_run_at, ml_freshness_warning = _get_ml_freshness(session)
 
         all_warnings = list(freshness_warnings)
+        if ml_freshness_warning:
+            all_warnings.append("ML embeddings are stale (>30 min since last run); run 'make ml-refresh'")
 
         return {
             "status": "OK",
@@ -124,8 +161,8 @@ async def run_health_check(driver) -> dict[str, Any]:
             "node_counts": node_counts,
             "edge_counts": edge_counts,
             "latest_insight_age_minutes": insight_age_minutes,
-            "last_ml_run_at": None,
-            "ml_freshness_warning": False,
+            "last_ml_run_at": last_ml_run_at,
+            "ml_freshness_warning": ml_freshness_warning,
             "warnings": all_warnings,
         }
     except Exception as exc:

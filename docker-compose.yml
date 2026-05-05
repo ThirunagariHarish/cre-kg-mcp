@@ -42,6 +42,29 @@ services:
       start_period: 60s
     restart: unless-stopped
 
+  # M-P3-1: ML refresh service — runs ml/refresh.py as its own container.
+  # This is the simplest wiring approach: a separate container that starts the
+  # APScheduler loop alongside the ingester, without modifying ingester/streaming.py.
+  ml-refresh:
+    image: python:3.11-slim
+    container_name: cre-ml-refresh
+    working_dir: /app
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      NEO4J_URI: "bolt://neo4j:7687"
+      NEO4J_USER: "neo4j"
+      NEO4J_PASSWORD: "${NEO4J_PASSWORD:-hackathon_local_only}"
+    command: ["sh", "-c", "pip install uv && uv run python -m ml.refresh"]
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - ml
+
 volumes:
   neo4j_data:
     driver: local

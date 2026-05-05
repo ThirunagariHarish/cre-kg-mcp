@@ -1,4 +1,4 @@
-.PHONY: bootstrap backfill mcp down test lint
+.PHONY: bootstrap backfill mcp down test lint ml-refresh
 
 # -----------------------------------------------------------------------
 # bootstrap: install Python deps, bring Neo4j up, wait for healthy
@@ -55,3 +55,10 @@ test-integration:
 # -----------------------------------------------------------------------
 lint:
 	uv run ruff check ingester/ mcp_server/ tests/ || true
+
+# -----------------------------------------------------------------------
+# ml-refresh: run ML pipeline once (embeddings → communities → link prediction)
+# M-P3-1: --once flag exits after a single run (no scheduler)
+# -----------------------------------------------------------------------
+ml-refresh:
+	uv run python -m ml.refresh --once

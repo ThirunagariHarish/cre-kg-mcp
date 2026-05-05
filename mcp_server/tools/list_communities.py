@@ -4,6 +4,9 @@ MCP tool: list_communities
 Returns Louvain communities discovered in the graph with size and sample members.
 Reads the 'community_id' property written by ml/communities.py.
 
+M-P3-4 FIX: Computes dominant_market and dominant_asset_class per community.
+M-P3-6 FIX: _node_ref always returns {id, label, name} shape (not raw Neo4j nodes).
+
 Conforms to api-contracts.md §8.
 """
 
@@ -16,7 +19,8 @@ import structlog
 log = structlog.get_logger()
 
 
-# Cypher to pull community sizes and per-community sample members with names
+# Cypher to pull community sizes, dominant market/asset_class, and per-community sample members.
+# M-P3-4: Uses OPTIONAL MATCH to find Market and AssetClass nodes connected to community members.
 _COMMUNITIES_QUERY = """
 MATCH (n)
 WHERE n.community_id IS NOT NULL
@@ -24,9 +28,38 @@ WHERE n.community_id IS NOT NULL
 WITH n.community_id AS cid, count(n) AS sz,
      collect(n)[0..5] AS sample_nodes
 WHERE sz >= $min_size
+
+// Compute dominant_market: highest-frequency Market connected to any community member
+CALL {
+  WITH cid
+  MATCH (m2)
+  WHERE m2.community_id = cid
+    AND (m2:Broker OR m2:Property OR m2:Tenant)
+  OPTIONAL MATCH (m2)-[:COVERS|LOCATED_IN|CLASSIFIED_AS*1..2]->(mkt:Market)
+  WITH mkt.name AS mkt_name, count(*) AS mkt_cnt
+  WHERE mkt_name IS NOT NULL
+  ORDER BY mkt_cnt DESC
+  LIMIT 1
+  RETURN mkt_name AS dominant_market
+}
+
+// Compute dominant_asset_class: highest-frequency AssetClass connected to any community member
+CALL {
+  WITH cid
+  MATCH (m3)
+  WHERE m3.community_id = cid
+    AND (m3:Broker OR m3:Property OR m3:Tenant)
+  OPTIONAL MATCH (m3)-[:SPECIALIZES_IN|CLASSIFIED_AS]->(ac:AssetClass)
+  WITH ac.name AS ac_name, count(*) AS ac_cnt
+  WHERE ac_name IS NOT NULL
+  ORDER BY ac_cnt DESC
+  LIMIT 1
+  RETURN ac_name AS dominant_asset_class
+}
+
 ORDER BY sz DESC
 LIMIT $limit
-RETURN cid, sz, sample_nodes
+RETURN cid, sz, sample_nodes, dominant_market, dominant_asset_class
 """
 
 _LAST_RUN_QUERY = """
@@ -36,7 +69,10 @@ RETURN m.last_run_at AS last_run_at
 
 
 def _node_ref(n) -> dict[str, str]:
-    """Extract id/label/name triple from a Neo4j node."""
+    """
+    M-P3-6 FIX: Extract id/label/name triple from a Neo4j node.
+    Always returns consistent {id: str, label: str, name: str} shape.
+    """
     props = dict(n)
     label = list(n.labels)[0] if n.labels else "Unknown"
 
@@ -54,7 +90,7 @@ def _node_ref(n) -> dict[str, str]:
         or props.get("address_line1")
         or props.get("broker_key", "")
     )
-    return {"id": node_id, "label": label, "name": name}
+    return {"id": str(node_id), "label": str(label), "name": str(name)}
 
 
 async def run_list_communities(
@@ -98,8 +134,12 @@ async def run_list_communities(
             entry: dict[str, Any] = {
                 "community_id": row["cid"],
                 "size": row["sz"],
+                # M-P3-4: dominant market and asset class
+                "dominant_market": row["dominant_market"],
+                "dominant_asset_class": row["dominant_asset_class"],
             }
             if include_members_sample:
+                # M-P3-6: always use _node_ref for consistent {id, label, name} shape
                 sample = [_node_ref(n) for n in row["sample_nodes"]]
                 entry["members_sample"] = sample
             communities.append(entry)

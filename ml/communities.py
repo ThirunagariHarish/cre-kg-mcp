@@ -101,11 +101,9 @@ def run_communities(driver: Driver | None = None) -> dict[str, Any]:
         _drop_projection_if_exists(gds)
 
         node_projection = {label: {"label": label} for label in NODE_LABELS}
-        rel_projection = {
-            rel: {"type": rel, "orientation": "UNDIRECTED"}
-            for rel in RELATIONSHIP_TYPES
-        }
-        G, proj_stats = gds.graph.project(GRAPH_NAME, node_projection, rel_projection)
+        # Use '*' wildcard — projects all existing relationship types as UNDIRECTED.
+        # Avoids hard failure when some listed types don't exist in the current graph.
+        G, proj_stats = gds.graph.project(GRAPH_NAME, node_projection, "*")
         log.info("gds_projection_created", node_count=proj_stats["nodeCount"])
 
         # Run Louvain write
@@ -144,7 +142,9 @@ def top_communities(n: int = 10, driver: Driver | None = None) -> list[dict[str,
     """
     Return the top-N communities by member count.
 
-    Each entry: {community_id, size, sample_member_ids, sample_member_labels}
+    M-P3-6 FIX: Each sample member is now returned as {id, label, name} — the same
+    shape as list_communities._node_ref output and api-contracts.md §8 spec.
+    Each entry: {community_id, size, members_sample: [{id, label, name}]}
     Queries the 'community_id' property written by run_communities().
     """
     close_after = driver is None
@@ -154,6 +154,7 @@ def top_communities(n: int = 10, driver: Driver | None = None) -> list[dict[str,
     try:
         with driver.session() as session:
             # Aggregate community sizes across all labeled nodes
+            # Return enough node properties to build the {id, label, name} shape
             result = session.run(
                 """
                 MATCH (n)
@@ -164,7 +165,9 @@ def top_communities(n: int = 10, driver: Driver | None = None) -> list[dict[str,
                      collect({
                        id: coalesce(n.broker_key, n.property_key, n.tenant_key,
                                     n.lease_key, n.pursuit_id, n.name, 'unknown'),
-                       label: labels(n)[0]
+                       label: labels(n)[0],
+                       name: coalesce(n.name, n.address_line1,
+                                      n.broker_key, n.property_key, n.tenant_key, 'unknown')
                      })[0..5] AS samples
                 ORDER BY sz DESC
                 LIMIT $n
@@ -174,12 +177,17 @@ def top_communities(n: int = 10, driver: Driver | None = None) -> list[dict[str,
             )
             communities = []
             for row in result:
+                # M-P3-6: return samples as {id, label, name} dicts — consistent with
+                # list_communities._node_ref and api-contracts.md §8
+                members_sample = [
+                    {"id": s["id"], "label": s["label"], "name": s["name"]}
+                    for s in row["samples"]
+                ]
                 communities.append(
                     {
                         "community_id": row["cid"],
                         "size": row["sz"],
-                        "sample_member_ids": [s["id"] for s in row["samples"]],
-                        "sample_member_labels": [s["label"] for s in row["samples"]],
+                        "members_sample": members_sample,
                     }
                 )
             return communities

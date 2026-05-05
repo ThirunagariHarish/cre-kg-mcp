@@ -47,27 +47,35 @@ def _make_session_mock(score_rows, persist_rows=None, probe_ok=True):
     """
     Build a mock session whose run() returns different results depending on the
     query string content:
-      - probe query (LIMIT 1) → one row if probe_ok else raises
-      - score query (BROKERED_BY path) → score_rows
+      - gds.list() query (B-P3-4 procedure detection) → rows with 'name' key if probe_ok
+      - stale-prune query (computed_at <) → row with before_count
+      - score query / Python fallback Cypher → score_rows
       - persist query (UNWIND) → MagicMock
       - predict_for_node query → persist_rows
     """
     session_mock = MagicMock()
 
-    call_count = [0]
-
     def _run(cypher, **kwargs):
-        c = call_count[0]
-        call_count[0] += 1
-
-        if "LIMIT 1" in cypher:
-            # Probe
+        if "gds.list()" in cypher:
+            # B-P3-4: procedure availability check
             if probe_ok:
+                # Return a row with name containing 'adamicAdar' and '.stream'
+                name_row = MagicMock()
+                name_row.__getitem__ = lambda self, key: "gds.linkprediction.adamicAdar.stream"
+                return iter([name_row])
+            else:
+                raise RuntimeError("gds.list() not available")
+        elif "computed_at < $current_run_at" in cypher:
+            # M-P3-3: stale prediction count or delete
+            if "stale_count" in cypher:
                 result = MagicMock()
-                result.single.return_value = MagicMock()
+                prune_row = MagicMock()
+                prune_row.__getitem__ = lambda self, key: 0  # 0 stale nodes
+                result.single.return_value = prune_row
                 return result
             else:
-                raise RuntimeError("adamicAdar not available")
+                # DETACH DELETE — no return value needed
+                return MagicMock()
         elif "UNWIND" in cypher:
             # Persist
             return MagicMock()
@@ -75,7 +83,7 @@ def _make_session_mock(score_rows, persist_rows=None, probe_ok=True):
             # predict_for_node read
             return iter(persist_rows or [])
         else:
-            # Score query
+            # Score query (Python fallback Adamic-Adar or procedure stream)
             return iter(score_rows)
 
     session_mock.run.side_effect = _run

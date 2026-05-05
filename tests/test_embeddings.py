@@ -104,7 +104,8 @@ class TestRunEmbeddingsHappyPath:
         call_kwargs = gds_mock.node2vec.write.call_args
         assert call_kwargs.kwargs["iterations"] == 5
 
-    def test_write_property_is_node2vec_embedding(self, mocker):
+    def test_write_property_is_embedding(self, mocker):
+        # B-P3-2 FIX: data-model.md §1 specifies 'embedding' on Broker/Property/Tenant.
         gds_mock, mock_G = _make_gds_mock()
         mocker.patch("ml.embeddings.GraphDataScience", return_value=gds_mock)
         mocker.patch("ml.embeddings._get_driver", return_value=MagicMock())
@@ -112,7 +113,7 @@ class TestRunEmbeddingsHappyPath:
         run_embeddings()
 
         call_kwargs = gds_mock.node2vec.write.call_args
-        assert call_kwargs.kwargs["writeProperty"] == "node2vec_embedding"
+        assert call_kwargs.kwargs["writeProperty"] == "embedding"
 
     def test_graph_project_called_with_locked_graph_name(self, mocker):
         gds_mock, mock_G = _make_gds_mock()
@@ -224,8 +225,9 @@ class TestLockedConstants:
     def test_iterations_constant_is_5(self):
         assert ITERATIONS == 5
 
-    def test_write_property_does_not_collide_with_phase2(self):
-        # Phase 2 uses 'embedding' for Insight nodes (384-dim sentence-transformers)
-        # Phase 3 MUST use a different property name
-        assert WRITE_PROPERTY != "embedding"
-        assert WRITE_PROPERTY == "node2vec_embedding"
+    def test_write_property_is_embedding(self):
+        # B-P3-2 FIX: data-model.md §1 specifies 'embedding' on Broker/Property/Tenant.
+        # Insight is NOT in the Node2Vec projection (different label), so no collision.
+        # Both Node2Vec (128-dim) and sentence-transformers (384-dim) write to 'embedding'
+        # but on different node labels.
+        assert WRITE_PROPERTY == "embedding"

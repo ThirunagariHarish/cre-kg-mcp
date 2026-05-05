@@ -6,10 +6,12 @@ Locked parameters (Atlas architecture §8.3 — do NOT change):
   walkLength:        80
   walksPerNode:      10
   iterations:        5
-  writeProperty:     'node2vec_embedding'
+  writeProperty:     'embedding'
 
-Uses a separate writeProperty ('node2vec_embedding') from Phase 2 Insight
-embeddings ('embedding', 384-dim sentence-transformers) to avoid collision.
+Note on property name: 'embedding' is the data-model.md §1 spec for Broker/Property/Tenant.
+Insight uses the same property name but is NOT in the Node2Vec projection (different label),
+so there is no collision. Phase 2 Insight embeddings (384-dim) are written by sentence-
+transformers; Node2Vec writes 128-dim embeddings to Broker/Property/Tenant via the projection.
 
 Entrypoint: python -m ml.embeddings
 Also importable by ml/refresh.py: from ml.embeddings import run_embeddings
@@ -42,7 +44,7 @@ EMBEDDING_DIM = 128
 WALK_LENGTH = 80
 WALKS_PER_NODE = 10
 ITERATIONS = 5
-WRITE_PROPERTY = "node2vec_embedding"
+WRITE_PROPERTY = "embedding"
 
 # Node labels to project (all business-entity nodes that benefit from structural embeddings)
 NODE_LABELS = [
@@ -99,20 +101,20 @@ def _project_graph(gds) -> Any:
     """
     Project the in-memory GDS graph over all CRE entity labels and their
     relationships.  Idempotent: drops any existing projection first.
+
+    Uses '*' wildcard for relationships so the projection succeeds even if some
+    relationship types (e.g. BROKERED_BY, ASSIGNED_TO) don't yet exist in the graph.
     """
     _drop_projection_if_exists(gds)
 
     # Build node projection dict: all labels projected with no properties
     node_projection = {label: {"label": label} for label in NODE_LABELS}
 
-    # Build relationship projection dict: all types projected as UNDIRECTED
-    # (Node2Vec performs random walks — undirected gives richer connectivity)
-    rel_projection = {
-        rel: {"type": rel, "orientation": "UNDIRECTED"}
-        for rel in RELATIONSHIP_TYPES
-    }
-
-    G, stats = gds.graph.project(GRAPH_NAME, node_projection, rel_projection)
+    # Use '*' wildcard for relationship projection — this projects all existing
+    # relationship types as UNDIRECTED, avoiding the hard failure when some listed
+    # types (e.g. BROKERED_BY, ASSIGNED_TO) don't exist in the current graph.
+    # Node2Vec benefits from undirected walks across ALL available relationships.
+    G, stats = gds.graph.project(GRAPH_NAME, node_projection, "*")
     log.info(
         "gds_projection_created",
         graph_name=GRAPH_NAME,

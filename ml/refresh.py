@@ -2,18 +2,21 @@
 ml/refresh.py — ML enrichment refresh worker.
 
 Runs embeddings → communities → link prediction on a 10-minute cadence.
-Override: if ≥50 new Insight nodes have been ingested since last run,
-fire immediately and update last_run_time in the :MLRunMeta singleton node.
+The override path (M-P3-2 FIX) is exposed as a SEPARATE method `maybe_trigger_now()`
+that callers (e.g. ingester after a batch flush) invoke directly — it is NOT part
+of the scheduler tick.
 
 Last-run metadata is stored in a Neo4j node:
   (:MLRunMeta {key: "global", last_run_at: datetime, new_insights_since: int})
 
 Entrypoint: python -m ml.refresh  (long-lived process)
+           python -m ml.refresh --once  (run pipeline once and exit — M-P3-1)
 """
 
 from __future__ import annotations
 
 import os
+import signal
 import sys
 import time
 from datetime import datetime, timezone
@@ -149,11 +152,39 @@ def _should_override(session, last_run_at: datetime | None) -> bool:
     return False
 
 
+def maybe_trigger_now(driver: Driver) -> bool:
+    """
+    M-P3-2 FIX: Separate override method for external callers.
+
+    Callers (e.g. ingester/streaming.py after a batch flush) invoke this method
+    when they suspect the override condition is met (≥50 new insights since last run).
+    Returns True if the pipeline was triggered, False otherwise.
+
+    This is NOT called from tick() — tick() always fires the pipeline unconditionally
+    on the 10-minute schedule.
+    """
+    try:
+        with driver.session() as session:
+            last_run_at = _get_last_run_time(session)
+            if _should_override(session, last_run_at):
+                log.info("ml_override_pipeline_fire")
+                run_ml_pipeline(driver)
+                return True
+        return False
+    except Exception as exc:
+        log.warning("maybe_trigger_now_failed", error=str(exc))
+        return False
+
+
 def start_scheduler() -> None:
     """
     Start APScheduler with IntervalTrigger(minutes=10).
-    Also checks override condition on each tick.
-    Long-lived — runs until killed.
+
+    M-P3-2 FIX: tick() always runs the pipeline unconditionally on each scheduled
+    interval. The override path (based on insight count) is exposed separately as
+    maybe_trigger_now() for callers that want to trigger early.
+
+    N-P3-4: Registers SIGTERM handler so Docker compose down doesn't kill mid-write.
     """
     from apscheduler.schedulers.blocking import BlockingScheduler
     from apscheduler.triggers.interval import IntervalTrigger
@@ -161,16 +192,9 @@ def start_scheduler() -> None:
     driver = _get_driver()
 
     def tick() -> None:
-        with driver.session() as session:
-            last_run_at = _get_last_run_time(session)
-            override = _should_override(session, last_run_at)
-
-        if override:
-            log.info("ml_refresh_override_fire")
-            run_ml_pipeline(driver)
-        else:
-            log.info("ml_refresh_scheduled_fire")
-            run_ml_pipeline(driver)
+        """Scheduled tick — always fires the full ML pipeline."""
+        log.info("ml_refresh_scheduled_fire")
+        run_ml_pipeline(driver)
 
     scheduler = BlockingScheduler()
     scheduler.add_job(
@@ -182,6 +206,15 @@ def start_scheduler() -> None:
         max_instances=1,
         coalesce=True,
     )
+
+    # N-P3-4: SIGTERM handler — graceful shutdown
+    def _sigterm_handler(*_) -> None:
+        log.info("ml_refresh_sigterm_received")
+        scheduler.shutdown(wait=False)
+        driver.close()
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, _sigterm_handler)
 
     log.info("ml_refresh_scheduler_starting", interval_minutes=10)
 
@@ -200,4 +233,21 @@ def start_scheduler() -> None:
 
 
 if __name__ == "__main__":
-    start_scheduler()
+    import argparse
+
+    # M-P3-1: --once flag — run pipeline once and exit
+    parser = argparse.ArgumentParser(description="ML enrichment refresh worker")
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help="Run the ML pipeline once and exit (instead of starting the scheduler)",
+    )
+    args = parser.parse_args()
+
+    if args.once:
+        log.info("ml_refresh_once_mode")
+        result = run_ml_pipeline()
+        print(result)
+        sys.exit(0 if result.get("status") == "OK" else 1)
+    else:
+        start_scheduler()

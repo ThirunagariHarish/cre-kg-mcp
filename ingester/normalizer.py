@@ -260,9 +260,44 @@ def canonical_resolver(tag: str) -> Optional[tuple[str, str]]:
         "markets": "Market",
         "asset_classes": "AssetClass",
         "service_lines": "ServiceLine",
+        # M-P3-7 / M-P2-4 FIX: submarkets resolve to Market via their parent market alias.
+        # A submarket tag like "DFW North - Urban" is an alias of a canonical submarket
+        # (e.g. "dfw-north") which is itself an alias listed under the "dallas-fort worth"
+        # market entry in canonical_map.yaml. The canonical_map has "dfw north - urban" as
+        # an alias under markets.dallas-fort worth AND as a submarket alias — markets takes
+        # priority in the alias lookup since markets is defined first in canonical_map.yaml.
+        # However if the alias was captured only under submarkets, we map the submarket to
+        # the Market label so callers get a resolvable market back.
+        "submarkets": "Market",
     }
     label = label_map.get(kind)
     if label is None:
         log.warning("unmapped_taxonomy_kind", kind=kind, raw_tag=tag)
         return None
+
+    # For submarkets: the canonical submarket name (e.g. "dfw-north") is not a Market name.
+    # We need to return the parent market name. Search markets aliases for any that include
+    # the canonical submarket name as an alias, or look up a fixed mapping.
+    if kind == "submarkets":
+        # Find the market that has this submarket's canonical name as one of its aliases,
+        # OR whose markets entry covers it. We do a reverse-lookup: find any market alias
+        # that contains the submarket canonical or any of the submarket's own aliases.
+        # Simpler approach: re-scan _RAW_MAP["markets"] for the submarket's aliases.
+        submarket_aliases_raw: list[str] = []
+        if "submarkets" in _RAW_MAP and canon in _RAW_MAP["submarkets"]:
+            submarket_aliases_raw = _RAW_MAP["submarkets"][canon] or []
+        # Include the canonical submarket name itself
+        candidates = [canon.strip().lower()] + [a.strip().lower() for a in submarket_aliases_raw]
+
+        # Search markets for a match on any candidate alias
+        for mkt_canon, mkt_aliases in (_RAW_MAP.get("markets") or {}).items():
+            mkt_all = [mkt_canon.strip().lower()] + [a.strip().lower() for a in (mkt_aliases or [])]
+            for c in candidates:
+                if c in mkt_all:
+                    return ("Market", mkt_canon)
+
+        # No parent market found — still return Market with submarket canonical name
+        log.warning("submarket_parent_market_not_found", submarket=canon, raw_tag=tag)
+        return ("Market", canon)
+
     return (label, canon)

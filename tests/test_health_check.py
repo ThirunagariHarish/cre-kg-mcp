@@ -50,8 +50,12 @@ def _make_mock_driver(gds_version="2.6.0", node_rows=None, edge_rows=None, raise
     insight_result = MagicMock()
     insight_result.single.return_value = None
 
-    # side_effect order: gds -> node_counts -> edge_counts -> insight_age
-    mock_session.run.side_effect = [gds_result_ok, node_result, edge_result, insight_result]
+    # ml_freshness result (B-P3-5 FIX: now queries MLRunMeta)
+    ml_meta_result = MagicMock()
+    ml_meta_result.single.return_value = None  # no ML run yet
+
+    # side_effect order: gds -> node_counts -> edge_counts -> insight_age -> ml_freshness
+    mock_session.run.side_effect = [gds_result_ok, node_result, edge_result, insight_result, ml_meta_result]
 
     return mock_driver
 
@@ -100,3 +104,88 @@ async def test_health_check_never_raises():
     # Should not raise
     result = await run_health_check(driver)
     assert result["status"] == "DEGRADED"
+
+
+# ---------------------------------------------------------------------------
+# B-P3-5: last_ml_run_at and ml_freshness_warning tests
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_health_check_last_ml_run_at_none_when_no_ml_meta():
+    """B-P3-5: last_ml_run_at is None when no MLRunMeta node exists."""
+    driver = _make_mock_driver()
+    result = await run_health_check(driver)
+    # No ML run meta seeded — last 4th entry is None from the mock
+    assert result["last_ml_run_at"] is None
+    assert result["ml_freshness_warning"] is False
+
+
+@pytest.mark.asyncio
+async def test_health_check_last_ml_run_at_populated_from_neo4j():
+    """B-P3-5: last_ml_run_at is populated from MLRunMeta node query."""
+    from datetime import datetime, timezone, timedelta
+    from unittest.mock import MagicMock
+
+    # Simulate a recent ML run (5 minutes ago — not stale)
+    recent_dt = datetime.now(timezone.utc) - timedelta(minutes=5)
+
+    # Build mock where ml_meta row returns a Neo4j-like datetime
+    neo4j_dt = MagicMock()
+    neo4j_dt.to_native.return_value = recent_dt
+
+    mock_driver = MagicMock()
+    mock_session = MagicMock()
+    mock_driver.session.return_value.__enter__ = lambda s: mock_session
+    mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
+
+    gds_result = MagicMock()
+    gds_result.single.return_value = {"gdsVersion": "2.6.0"}
+    node_result = MagicMock()
+    node_result.__iter__ = lambda s: iter([])
+    edge_result = MagicMock()
+    edge_result.__iter__ = lambda s: iter([])
+    insight_result = MagicMock()
+    insight_result.single.return_value = None
+    ml_meta_result = MagicMock()
+    ml_meta_result.single.return_value = {"last_ml_run_at": neo4j_dt}
+
+    mock_session.run.side_effect = [gds_result, node_result, edge_result, insight_result, ml_meta_result]
+
+    result = await run_health_check(mock_driver)
+    assert result["last_ml_run_at"] is not None
+    assert result["ml_freshness_warning"] is False
+
+
+@pytest.mark.asyncio
+async def test_health_check_ml_freshness_warning_when_stale():
+    """B-P3-5: ml_freshness_warning is True when last ML run was >30 min ago."""
+    from datetime import datetime, timezone, timedelta
+    from unittest.mock import MagicMock
+
+    # Simulate a stale ML run (35 minutes ago)
+    stale_dt = datetime.now(timezone.utc) - timedelta(minutes=35)
+
+    neo4j_dt = MagicMock()
+    neo4j_dt.to_native.return_value = stale_dt
+
+    mock_driver = MagicMock()
+    mock_session = MagicMock()
+    mock_driver.session.return_value.__enter__ = lambda s: mock_session
+    mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
+
+    gds_result = MagicMock()
+    gds_result.single.return_value = {"gdsVersion": "2.6.0"}
+    node_result = MagicMock()
+    node_result.__iter__ = lambda s: iter([])
+    edge_result = MagicMock()
+    edge_result.__iter__ = lambda s: iter([])
+    insight_result = MagicMock()
+    insight_result.single.return_value = None
+    ml_meta_result = MagicMock()
+    ml_meta_result.single.return_value = {"last_ml_run_at": neo4j_dt}
+
+    mock_session.run.side_effect = [gds_result, node_result, edge_result, insight_result, ml_meta_result]
+
+    result = await run_health_check(mock_driver)
+    assert result["ml_freshness_warning"] is True
+    assert any("stale" in w.lower() or "ml" in w.lower() for w in result["warnings"])
