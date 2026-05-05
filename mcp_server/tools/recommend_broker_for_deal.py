@@ -43,7 +43,7 @@ _FIND_BROKERS_MARKET = """
 MATCH (b:Broker)-[:COVERS]->(m:Market)
 WHERE toLower(m.name) = toLower($market)
 RETURN b.broker_key AS broker_key, b.name AS name, b.firm AS firm,
-       b.total_deal_volume_usd AS deal_volume,
+       b.deal_volume_usd AS deal_volume,
        b.community_id AS community_id,
        1 AS market_match
 """
@@ -52,7 +52,7 @@ _FIND_BROKERS_ASSET_CLASS = """
 MATCH (b:Broker)-[:SPECIALIZES_IN]->(ac:AssetClass)
 WHERE toLower(ac.name) = toLower($asset_class)
 RETURN b.broker_key AS broker_key, b.name AS name, b.firm AS firm,
-       b.total_deal_volume_usd AS deal_volume,
+       b.deal_volume_usd AS deal_volume,
        b.community_id AS community_id,
        1 AS ac_match
 """
@@ -275,19 +275,33 @@ async def run_recommend_broker_for_deal(
                 if affinity_score > 0.5:
                     reasons.append(f"Predicted affinity score {affinity_score:.2f}")
 
+                # Derive production_tier label from deal_volume_score quartile (Q3 Quill ruling)
+                vol_score = round(bdata["volume_norm"], 3)
+                if vol_score >= 0.75:
+                    production_tier = "top-quartile"
+                elif vol_score >= 0.50:
+                    production_tier = "second-quartile"
+                elif vol_score >= 0.25:
+                    production_tier = "third-quartile"
+                else:
+                    production_tier = "fourth-quartile"
+
                 ranked.append({
                     "broker": {
                         "id": bk,
                         "name": bdata["name"],
                         "firm": bdata["firm"],
+                        "community_id": bdata.get("community_id"),  # M-P4-4: exposed per PRD STORY-4.3 AC
                     },
                     "score": score,
                     "components": {
-                        "deal_volume_score": round(bdata["volume_norm"], 3),
+                        "deal_volume_score": vol_score,
+                        "production_tier": production_tier,  # Q3 Quill ruling
                         "specialization_match": bool(bdata["ac_match"]),
                         "market_coverage_match": bool(bdata["market_match"]),
                         "spoc_status": spoc_status,
-                        "community_overlap": community_overlap,
+                        "community_match": community_overlap,  # M-P4-3: renamed from community_overlap
+                        "community_overlap_with_me": community_overlap,  # Q1 Quill ruling
                         "predicted_affinity_score": round(affinity_score, 3),
                     },
                     "reasons": reasons,
@@ -296,7 +310,6 @@ async def run_recommend_broker_for_deal(
                         if s.get("service_line", "").lower() == service_line.lower()
                         or not service_line
                     ],
-                    "community_id": bdata.get("community_id"),
                 })
 
     except Exception as exc:

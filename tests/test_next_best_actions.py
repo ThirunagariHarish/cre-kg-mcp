@@ -54,7 +54,7 @@ def _make_driver(pursuit_row: dict | None, similar_rows: list[dict] | None = Non
                 result_mock.single.return_value = _dict_record(pursuit_row)
             result_mock.__iter__ = MagicMock(return_value=iter([]))
 
-        elif "win_loss" in cypher:
+        elif "outcome IN" in cypher or "win_loss" in cypher:
             rows = similar_rows or []
             result_mock.single.return_value = None
             result_mock.__iter__ = MagicMock(

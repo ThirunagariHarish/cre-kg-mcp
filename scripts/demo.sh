@@ -17,6 +17,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_DIR"
 
+# N-P4-3: Verify docker is installed
+command -v docker >/dev/null || { echo "docker not found; install Docker Desktop and retry"; exit 1; }
+
+# N-P4-4: Load .env so NEO4J_PASSWORD and other vars are available
+if [ -f ".env" ]; then
+    # shellcheck source=/dev/null
+    set -a; source .env; set +a
+fi
+NEO4J_PASSWORD="${NEO4J_PASSWORD:-hackathon_local_only}"
+
 # ---------------------------------------------------------------------------
 # Colour helpers
 # ---------------------------------------------------------------------------
@@ -38,7 +48,7 @@ docker compose up -d
 info "Waiting for Neo4j to become healthy (up to 3 minutes)..."
 attempts=0
 max_attempts=36
-until docker compose exec -T neo4j cypher-shell -u neo4j -p hackathon_local_only \
+until docker compose exec -T neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD}" \
     "CALL gds.version() YIELD version RETURN version" > /dev/null 2>&1; do
     attempts=$((attempts + 1))
     if [ "$attempts" -ge "$max_attempts" ]; then
@@ -54,7 +64,7 @@ info "Neo4j is healthy."
 # ---------------------------------------------------------------------------
 # 2. Backfill if graph is empty
 # ---------------------------------------------------------------------------
-BROKER_COUNT=$(docker compose exec -T neo4j cypher-shell -u neo4j -p hackathon_local_only \
+BROKER_COUNT=$(docker compose exec -T neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD}" \
     "MATCH (b:Broker) RETURN count(b) AS cnt" --format plain 2>/dev/null \
     | grep -E '^[0-9]+$' | head -1 || echo "0")
 
@@ -90,7 +100,7 @@ info "Waiting for enrichments to be ready (up to 5 minutes)..."
 # Helper: run a Cypher count query
 cypher_count() {
     local query="$1"
-    docker compose exec -T neo4j cypher-shell -u neo4j -p hackathon_local_only \
+    docker compose exec -T neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD}" \
         "$query" --format plain 2>/dev/null \
         | grep -E '^[0-9]+$' | head -1 || echo "0"
 }
@@ -101,7 +111,7 @@ step=10
 
 while [ "$elapsed" -lt "$max_wait" ]; do
     INSIGHT_CNT=$(cypher_count "MATCH (i:Insight) RETURN count(i) AS cnt")
-    EMBED_CNT=$(cypher_count "MATCH (b:Broker) WHERE b.node2vec_embedding IS NOT NULL RETURN count(b) AS cnt")
+    EMBED_CNT=$(cypher_count "MATCH (b:Broker) WHERE b.embedding IS NOT NULL RETURN count(b) AS cnt")
     COMM_CNT=$(cypher_count "MATCH (b:Broker) WHERE b.community_id IS NOT NULL RETURN count(b) AS cnt")
     PRED_CNT=$(cypher_count "MATCH (pl:PredictedLink) RETURN count(pl) AS cnt")
 

@@ -74,7 +74,7 @@ WHERE ($market IS NULL OR toLower(m.name) = toLower($market)
 OPTIONAL MATCH (l:Lease)-[:ON]->(p)
 WITH p, m, sub, ac,
      count(l) AS lease_count,
-     max(l.signed_date) AS latest_lease
+     max(l.execution_date) AS latest_lease
 RETURN
   p.property_key  AS property_key,
   p.address_line1 AS address,
@@ -87,34 +87,12 @@ ORDER BY latest_lease DESC NULLS LAST
 LIMIT $limit
 """
 
-_FIND_BROKERS_FOR_MARKET_AC = """
-MATCH (b:Broker)
-OPTIONAL MATCH (b)-[:COVERS]->(m:Market)
-  WHERE $market IS NULL OR toLower(m.name) = toLower($market)
-OPTIONAL MATCH (b)-[:SPECIALIZES_IN]->(ac:AssetClass)
-  WHERE $asset_class IS NULL OR toLower(ac.name) = toLower($asset_class)
-WITH b,
-     count(DISTINCT m) AS market_matches,
-     count(DISTINCT ac) AS ac_matches
-WHERE market_matches > 0 OR ac_matches > 0
-OPTIONAL MATCH (spoc_rel:SPOC_FOR)-[:SPOC_FOR_REL]-(b)
-WITH b, market_matches, ac_matches
-RETURN
-  b.broker_key  AS broker_key,
-  b.name        AS name,
-  b.firm        AS firm,
-  b.total_deal_volume_usd AS deal_volume,
-  market_matches,
-  ac_matches
-LIMIT $limit
-"""
-
-# Simplified broker query that works with actual graph structure
+# Broker queries — use actual graph structure with correct column name (deal_volume_usd)
 _FIND_BROKERS_COVERS = """
 MATCH (b:Broker)-[:COVERS]->(m:Market)
 WHERE toLower(m.name) = toLower($market)
 RETURN b.broker_key AS broker_key, b.name AS name, b.firm AS firm,
-       b.total_deal_volume_usd AS deal_volume,
+       b.deal_volume_usd AS deal_volume,
        1 AS market_matches, 0 AS ac_matches
 LIMIT $limit
 """
@@ -123,7 +101,7 @@ _FIND_BROKERS_SPECIALIZES = """
 MATCH (b:Broker)-[:SPECIALIZES_IN]->(ac:AssetClass)
 WHERE toLower(ac.name) = toLower($asset_class)
 RETURN b.broker_key AS broker_key, b.name AS name, b.firm AS firm,
-       b.total_deal_volume_usd AS deal_volume,
+       b.deal_volume_usd AS deal_volume,
        0 AS market_matches, 1 AS ac_matches
 LIMIT $limit
 """
@@ -138,7 +116,7 @@ _FIND_BROKERS_FOR_PROPERTY = """
 MATCH (l:Lease)-[:ON]->(p:Property {property_key: $property_key})
 MATCH (l)-[:BROKERED_BY]->(b:Broker)
 RETURN b.broker_key AS broker_key, b.name AS broker_name,
-       b.total_deal_volume_usd AS deal_volume
+       b.deal_volume_usd AS deal_volume
 """
 
 
@@ -432,7 +410,7 @@ async def run_find_matching_properties_for_insight(
         score = weighted_sum({
             "deal_volume":      (vol_norm, BROKER_DEAL_VOLUME_WEIGHT),
             "specialization":   (ac_m, BROKER_SPECIALIZATION_WEIGHT),
-            "market_coverage":  (market_m, BROKER_SPOC_WEIGHT),
+            "market_coverage":  (market_m, BROKER_SPOC_WEIGHT),  # Reused for market coverage; see N-P4-5 comment in ranker.py
         })
 
         reasons: list[str] = []

@@ -23,6 +23,36 @@ import structlog
 
 log = structlog.get_logger()
 
+
+# ---------------------------------------------------------------------------
+# Similarity scoring (M-P4-8: replaces hardcoded 0.75)
+# ---------------------------------------------------------------------------
+
+def _field_similarity(
+    src_market: str | None,
+    src_asset_class: str | None,
+    src_service_line: str | None,
+    cmp_market: str | None,
+    cmp_asset_class: str | None,
+    cmp_service_line: str | None,
+) -> float:
+    """
+    Weighted feature-match similarity over {market, asset_class, service_line}.
+
+    Weights: market=0.5, asset_class=0.3, service_line=0.2.
+    Returns a float in [0.0, 1.0].
+    """
+    def _match(a: str | None, b: str | None) -> float:
+        if not a or not b:
+            return 0.0
+        return 1.0 if a.strip().lower() == b.strip().lower() else 0.0
+
+    market_score = _match(src_market, cmp_market)
+    ac_score = _match(src_asset_class, cmp_asset_class)
+    sl_score = _match(src_service_line, cmp_service_line)
+    return round(0.5 * market_score + 0.3 * ac_score + 0.2 * sl_score, 3)
+
+
 # ---------------------------------------------------------------------------
 # Cypher templates — all values parameterised
 # ---------------------------------------------------------------------------
@@ -39,7 +69,6 @@ RETURN
   pur.deal_size_sf  AS deal_size_sf,
   pur.asset_class   AS asset_class,
   pur.market        AS market,
-  pur.win_loss      AS win_loss,
   c.name            AS client_name,
   c.client_key      AS client_key,
   b.broker_key      AS broker_key,
@@ -52,20 +81,20 @@ MATCH (pur:Pursuit)
 WHERE pur.pursuit_id <> $pursuit_id
   AND ($asset_class IS NULL OR toLower(pur.asset_class) = toLower($asset_class))
   AND ($market IS NULL OR toLower(pur.market) = toLower($market))
-  AND pur.win_loss IS NOT NULL
+  AND pur.outcome IN ['Closed Won', 'Won']
 OPTIONAL MATCH (pur)-[:FOR]->(c:Client)
 OPTIONAL MATCH (pur)-[:ASSIGNED_TO]->(b:Broker)
 RETURN
-  pur.pursuit_id  AS pursuit_id,
-  pur.stage       AS stage,
-  pur.win_loss    AS outcome,
-  pur.asset_class AS asset_class,
-  pur.market      AS market,
-  pur.probability AS probability,
-  c.name          AS client_name,
-  b.broker_key    AS closing_broker_key,
-  b.name          AS closing_broker_name,
-  pur.service_line AS service_line
+  pur.pursuit_id   AS pursuit_id,
+  pur.stage        AS stage,
+  pur.outcome      AS outcome,
+  pur.asset_class  AS asset_class,
+  pur.market       AS market,
+  pur.probability  AS probability,
+  pur.service_line AS service_line,
+  c.name           AS client_name,
+  b.broker_key     AS closing_broker_key,
+  b.name           AS closing_broker_name
 ORDER BY pur.probability DESC
 LIMIT $limit
 """
@@ -219,13 +248,17 @@ async def run_suggest_next_best_actions(
                 )
             )
             for r in rows:
+                sim_score = _field_similarity(
+                    market, asset_class, pursuit_data.get("service_line"),
+                    r["market"], r["asset_class"], r["service_line"],
+                )
                 comparables.append({
                     "pursuit": {
                         "id": r["pursuit_id"],
                         "stage": r["stage"],
                         "outcome": r["outcome"],
                     },
-                    "similarity_score": 0.75,  # structural match; placeholder for embedding-based score
+                    "similarity_score": sim_score,
                     "closing_broker": {
                         "id": r["closing_broker_key"],
                         "name": r["closing_broker_name"],

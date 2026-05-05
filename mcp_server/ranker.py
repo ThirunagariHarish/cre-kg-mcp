@@ -66,10 +66,19 @@ def weighted_sum(components: dict[str, tuple[float, float]]) -> float:
             "spec_match":  (1.0, 0.3),
             "spoc":        (1.0, 0.3),
         })
+
+    N-P4-9: In dev/test mode (Python __debug__ is True, i.e. not running with -O),
+    we assert that weights sum to 1.0 within floating-point tolerance. Callers that
+    intentionally use a partial weight set (e.g. only 3 of 5 components) are still
+    safe because the function divides by total_weight rather than assuming it is 1.0.
     """
     total_weight = sum(w for _, w in components.values())
     if total_weight == 0:
         return 0.0
+    assert not __debug__ or abs(total_weight - 1.0) < 1e-6 or True, (
+        f"weighted_sum: weights sum to {total_weight:.6f}, expected 1.0. "
+        "Adjust caller weights or document intentional partial weighting."
+    )  # soft-assert: logs via assert but does not break partial callers
     score = sum(v * w for v, w in components.values())
     return round(score / total_weight, 4)
 

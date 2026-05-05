@@ -328,6 +328,80 @@ class TestOutputShape:
             assert "spoc_status" in b["components"]
 
 
+class TestMyBrokerKeyCommunityOverlap:
+    """M-P4-7: my_broker_key community-overlap branch raises same-community broker above different-community one."""
+
+    @pytest.mark.asyncio
+    async def test_same_community_broker_outranks_different_community(self):
+        """
+        3 brokers, all with equal deal_volume and no SPOC.
+        Broker A (community 1) and Broker B (community 1) share community with the requesting broker.
+        Broker C (community 2) does not.
+        Passing my_broker_key of a community-1 broker → A and B score higher than C.
+        """
+        broker_a = {
+            "broker_key": "email::a@cbre.com",
+            "name": "Alice Same",
+            "firm": "CBRE",
+            "deal_volume": 100_000_000,
+            "community_id": 1,
+            "market_match": 1,
+        }
+        broker_b = {
+            "broker_key": "email::b@jll.com",
+            "name": "Bob Same",
+            "firm": "JLL",
+            "deal_volume": 100_000_000,
+            "community_id": 1,
+            "market_match": 1,
+        }
+        broker_c = {
+            "broker_key": "email::c@cushman.com",
+            "name": "Carol Diff",
+            "firm": "Cushman",
+            "deal_volume": 100_000_000,
+            "community_id": 2,
+            "market_match": 1,
+        }
+
+        driver = _make_driver(
+            market_brokers=[broker_a, broker_b, broker_c],
+            my_community=1,  # requesting broker is in community 1
+        )
+
+        result = await run_recommend_broker_for_deal(
+            driver,
+            market="Dallas",
+            asset_class="Industrial",
+            service_line="TenantRep",
+            my_broker_key="email::requesting@cbre.com",  # triggers community lookup
+        )
+
+        assert result["status"] == "OK"
+        assert len(result["brokers"]) == 3
+
+        broker_ids = [b["broker"]["id"] for b in result["brokers"]]
+        carol_pos = broker_ids.index("email::c@cushman.com")
+        alice_pos = broker_ids.index("email::a@cbre.com")
+        bob_pos = broker_ids.index("email::b@jll.com")
+
+        # Same-community brokers must rank above the different-community one
+        assert alice_pos < carol_pos, (
+            f"Alice (community 1) should rank above Carol (community 2); "
+            f"alice_pos={alice_pos}, carol_pos={carol_pos}"
+        )
+        assert bob_pos < carol_pos, (
+            f"Bob (community 1) should rank above Carol (community 2); "
+            f"bob_pos={bob_pos}, carol_pos={carol_pos}"
+        )
+
+        # community_overlap_with_me must be True for same-community brokers
+        alice_entry = result["brokers"][alice_pos]
+        carol_entry = result["brokers"][carol_pos]
+        assert alice_entry["components"]["community_overlap_with_me"] is True
+        assert carol_entry["components"]["community_overlap_with_me"] is False
+
+
 class TestKLimit:
     @pytest.mark.asyncio
     async def test_result_capped_at_k(self):

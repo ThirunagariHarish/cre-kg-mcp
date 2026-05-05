@@ -73,6 +73,10 @@ MATCH (n) RETURN labels(n)[0] AS label, count(n) AS cnt ORDER BY cnt DESC
 Copy the snippet from `examples/claude_desktop_config.json` into that file (merge
 into any existing `mcpServers` block):
 
+> **Note:** Replace `/Users/harishkumar/.local/bin/uv` with the output of `which uv` on your machine before pasting the block below.
+
+> **Note on Snowflake env vars:** The MCP server is read-only Neo4j by design and does not connect to Snowflake directly. Snowflake env vars (`SNOWFLAKE_*`) are consumed only by the ingester and backfill scripts — they are NOT needed in `claude_desktop_config.json`.
+
 ```json
 {
   "mcpServers": {

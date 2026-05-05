@@ -136,10 +136,19 @@ Common conventions:
     {
       "property": { "id": "id::P-9921", "label": "Property", "name": "1450 Logistics Pkwy" },
       "score": 0.84,
-      "reason": "Industrial in DFW; PREDICTED_AFFINITY to insight tags",
+      "reasons": ["Industrial asset class match", "Located in dallas-fort worth", "Recent lease activity"],
       "brokers": [
         { "node": {"id": "email::jane@cbre.com", "name": "Jane Liu"}, "rel": "BROKERED_BY", "deal_volume_usd": 145000000 }
       ]
+    }
+  ],
+  "matching_brokers": [
+    {
+      "broker_id": "email::jane@cbre.com",
+      "name": "Jane Liu",
+      "firm": "CBRE",
+      "score": 0.88,
+      "reasons": ["Covers dallas-fort worth market", "Specializes in industrial asset class"]
     }
   ],
   "truncated": false
@@ -168,6 +177,10 @@ Common conventions:
 }
 ```
 
+**Note:** PRD originally specified structured `recommended_actions: [{action, rationale, confidence, supporting_pursuits}]`; this v1 uses flat strings + separate `comparables` for simplicity.
+
+**Note:** Stage history is not tracked in v1; comparables include final outcome only. The `transitioned_through_stages` field from early PRD drafts is not present in v1 output.
+
 **Output:**
 ```json
 {
@@ -176,8 +189,7 @@ Common conventions:
   "comparables": [
     {
       "pursuit": { "id": "pur_201", "stage": "Closed Won", "outcome": "Closed Won" },
-      "similarity_score": 0.79,
-      "transitioned_through_stages": ["Proposal Sent", "Negotiation", "Closed Won"],
+      "similarity_score": 0.80,
       "closing_broker": { "id": "email::tom@jll.com", "name": "Tom Patel" },
       "service_line": "tenantrep"
     }
@@ -210,6 +222,7 @@ Common conventions:
     "asset_class": { "type": "string" },
     "service_line": { "type": "string" },
     "client_name": { "type": "string", "description": "Optional. If provided, SPOC matches receive a boost." },
+    "my_broker_key": { "type": "string", "description": "Optional. Broker key of the requesting broker. If provided, community overlap with that broker is computed and exposed as community_overlap_with_me." },
     "k": { "type": "integer", "minimum": 1, "maximum": 20, "default": 5 }
   },
   "required": ["market", "asset_class", "service_line"]
@@ -223,25 +236,34 @@ Common conventions:
   "deal_context": { "market": "atlanta", "asset_class": "retail", "service_line": "tenantrep", "client": "Acme Corp" },
   "brokers": [
     {
-      "broker": { "id": "email::jane@cbre.com", "name": "Jane Liu", "firm": "CBRE" },
+      "broker": { "id": "email::jane@cbre.com", "name": "Jane Liu", "firm": "CBRE", "community_id": 7 },
       "score": 0.88,
       "components": {
         "deal_volume_score": 0.92,
+        "production_tier": "top-quartile",
         "specialization_match": true,
+        "market_coverage_match": true,
         "spoc_status": "active",
         "community_match": true,
+        "community_overlap_with_me": true,
         "predicted_affinity_score": 0.61
       },
       "reasons": [
         "Active SPOC for Acme Corp on TenantRep service line",
         "Top-quartile deal volume in Atlanta Retail (last 12 months)",
-        "In same Louvain community as in-scope properties"
+        "In same Louvain community as requesting broker"
       ]
     }
   ],
   "truncated": false
 }
 ```
+
+**Notes:**
+- `my_broker_key`: pass the requesting broker's merge key (e.g. `"email::jane@cbre.com"`) to enable community overlap scoring.
+- `community_overlap_with_me`: `true` when the candidate broker is in the same Louvain community as the requesting broker (`my_broker_key`).
+- `production_tier`: derived from `deal_volume_score` quartile breakpoints — `"top-quartile"` (≥0.75), `"second-quartile"` (≥0.50), `"third-quartile"` (≥0.25), `"fourth-quartile"` (below 0.25).
+- `community_id`: exposed on the `broker` sub-object per PRD STORY-4.3 AC.
 
 **Error modes:**
 - Unknown market/asset class → `status: "OK"`, `brokers: []`, `warnings: ["Market 'XYZ' not in canonical map"]`
