@@ -3,7 +3,7 @@
 Commercial Real Estate knowledge graph powered by Neo4j + GDS, seeded from
 Snowflake, and exposed to Claude Desktop via MCP tools.
 
-**Hackathon Phase 1** — Snowflake backfill + `health_check` + `cypher_query`.
+**Hackathon Phase 2** — Streaming insight pipeline + `Insight` nodes with body embeddings + `semantic_search` MCP tool.
 
 ---
 
@@ -88,10 +88,91 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-Restart Claude Desktop. You should see 2 tools available:
-`health_check` and `cypher_query`.
+Restart Claude Desktop. You should see 3 tools available:
+`semantic_search`, `health_check`, and `cypher_query`.
 
 Ask Claude: **"Run a health check on the CRE graph"**
+
+---
+
+## Phase 2 — Streaming Insight Pipeline
+
+### Running the streaming ingester
+
+The ingester is a long-lived process that:
+1. Backfills all existing rows from `CRE_MARKET_INSIGHTS` into Neo4j (50 seeded rows).
+2. Polls `CRE_INSIGHTS_DELTA` every 60s for new rows written by the Snowflake Task.
+3. Upserts each insight as an `:Insight` node with a 384-dim body embedding (all-MiniLM-L6-v2).
+4. Creates `:ABOUT` edges to Market, Submarket, AssetClass, and Tenant nodes.
+
+```bash
+# Start the ingester (long-running, run in a separate terminal or via docker compose)
+uv run python -m ingester.streaming
+
+# Or via the console script
+cre-ingest
+```
+
+Environment variable `INGEST_POLL_SECONDS` controls the polling interval (default: 60).
+
+### Deploying the Snowflake Stream + Task
+
+Run `sql/streams/insights_stream.sql` once in a Snowflake worksheet or via:
+
+```bash
+# Applied automatically during Phase 2 setup — re-running is safe (idempotent)
+# To apply manually:
+snowsql -f sql/streams/insights_stream.sql
+```
+
+This creates:
+- `CRE_INSIGHTS_STREAM` — append-only stream on `CRE_MARKET_INSIGHTS`
+- `CRE_INSIGHTS_DELTA` — staging table the ingester polls
+- `CRE_INSIGHTS_TASK` — 1-minute scheduled task moving stream rows to delta
+
+Verify the Task is running:
+```sql
+SHOW TASKS LIKE 'CRE_INSIGHTS_TASK' IN SCHEMA HACKATHON.PUBLIC;
+-- State column should show 'started'
+```
+
+### Using `semantic_search` from Claude
+
+Ask Claude any of:
+
+```
+"Find the latest insight about industrial absorption"
+"What insights relate to sublease pressure?"
+"Find insights about tenant downsizing in Atlanta"
+"semantic_search label=Insight query_text='office leasing demand'"
+```
+
+Filters available: `market`, `asset_class`, `date_from`, `date_to`.
+
+Example tool call:
+```json
+{
+  "label": "Insight",
+  "query_text": "tenant downsizing sublease pressure",
+  "top_k": 5,
+  "market": "Atlanta"
+}
+```
+
+### Verifying the ingest
+
+After starting the ingester, check Neo4j:
+```cypher
+MATCH (i:Insight) RETURN count(i) AS total_insights;
+// Expected: 50
+
+MATCH (i:Insight)-[:ABOUT]->(n) RETURN labels(n)[0] AS target, count(*) AS edges
+ORDER BY edges DESC;
+// Expected: Market 50, Submarket 50, AssetClass 50, Tenant ~6
+
+MATCH (i:Insight) WHERE i.embedding IS NOT NULL RETURN count(i) AS with_embeddings;
+// Expected: 50
+```
 
 ---
 
@@ -127,17 +208,17 @@ Snowflake is read-only in Phase 1 — no rollback needed there.
 Claude Desktop
     │  stdio MCP
     ▼
-mcp_server/server.py          ← registered tools: health_check, cypher_query
+mcp_server/server.py          ← tools: semantic_search, health_check, cypher_query
     │  Bolt 7687
     ▼
 Neo4j 5.15 + GDS              ← Docker Compose, local volume
-    ▲
-ingester/backfill.py          ← one-shot: Snowflake → Neo4j
-    │
-Snowflake HACKATHON.PUBLIC    ← read-only (ACCOUNTADMIN role)
+    ▲                ▲
+ingester/backfill.py          ingester/streaming.py  ← long-running ingester
+    │                              │ polls every 60s
+Snowflake HACKATHON.PUBLIC ←── CRE_INSIGHTS_DELTA ←── CRE_INSIGHTS_STREAM (Task 1min)
+    (read-only, ACCOUNTADMIN)      (staging table)       (on CRE_MARKET_INSIGHTS)
 ```
 
-Phase 2 will add `ingester/insight_consumer.py` + streaming ingester.
 Phase 3 will add `ingester/ml_enricher.py` + GDS Node2Vec / Louvain / link prediction.
 Phase 4 will add 3 high-level tools: `find_matching_properties_for_insight`,
 `suggest_next_best_actions_for_deal`, `recommend_broker_for_deal`.
@@ -157,20 +238,28 @@ Phase 4 will add 3 high-level tools: `find_matching_properties_for_insight`,
 │   ├── normalizer.py            # merge-key derivation + taxonomy canonicalization
 │   ├── canonical_map.yaml       # market / asset-class / service-line aliases
 │   ├── graph_writer.py          # Neo4j MERGE templates + schema bootstrap
-│   └── backfill.py              # backfill orchestrator (locked order)
+│   ├── backfill.py              # backfill orchestrator (locked order)
+│   └── streaming.py             # Phase 2: long-running insight ingester (poll+embed)
 ├── mcp_server/
 │   ├── server.py                # FastMCP stdio server + tool registry
 │   ├── neo4j_client.py          # read-only driver singleton
 │   └── tools/
-│       ├── health_check.py      # health_check MCP tool
-│       └── cypher_query.py      # cypher_query MCP tool (debug only)
+│       ├── health_check.py      # health_check MCP tool (+ freshness reporting)
+│       ├── cypher_query.py      # cypher_query MCP tool (debug only)
+│       └── semantic_search.py   # Phase 2: semantic_search MCP tool
+├── sql/
+│   └── streams/
+│       └── insights_stream.sql  # Phase 2: Snowflake Stream + Task DDL (idempotent)
 ├── scripts/
 │   └── backfill.py              # convenience entry point
 └── tests/
-    ├── test_normalizer.py       # pure unit tests for merge keys + taxonomy
-    ├── test_snowflake_client.py # mocked Snowflake connection tests
-    ├── test_health_check.py     # mocked Neo4j driver tests
-    ├── test_cypher_query.py     # read-only enforcement tests
-    ├── test_graph_writer.py     # testcontainers integration tests
-    └── test_mcp_registration.py # tool registration smoke tests
+    ├── test_normalizer.py            # pure unit tests for merge keys + taxonomy
+    ├── test_snowflake_client.py      # mocked Snowflake connection tests
+    ├── test_health_check.py          # mocked Neo4j driver tests
+    ├── test_cypher_query.py          # read-only enforcement tests
+    ├── test_graph_writer.py          # testcontainers integration tests
+    ├── test_mcp_registration.py      # tool registration smoke tests
+    ├── test_streaming_ingester.py    # Phase 2: mocked Snowflake + Neo4j upsert tests
+    ├── test_insight_normalization.py # Phase 2: unmapped taxonomy pass-through tests
+    └── test_semantic_search.py       # Phase 2: mocked embedding ranking tests
 ```

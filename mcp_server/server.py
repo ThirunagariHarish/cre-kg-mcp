@@ -45,14 +45,20 @@ def register_all_tools() -> None:
     Add new tool imports here as new phases land — never modify individual
     tool files to add registrations.
     """
-    # Phase 1 tools (api-contracts.md §11 order, high-intent tools first)
-    # Phase 2/3/4 high-intent tools will be prepended here
     from mcp_server.tools import health_check as hc_mod
     from mcp_server.tools import cypher_query as cq_mod
+    # Phase 2 tools (api-contracts.md §11 order: semantic_search at position 4)
+    from mcp_server.tools import semantic_search as ss_mod
 
-    # Registration order for Phase 1: health_check (pos 8) then cypher_query (pos 9)
-    # Positions 1-7 will be filled by Phase 2/3/4 imports above this line
+    # Registration order per api-contracts.md §11:
+    # 1-3: find_matching_properties_for_insight, suggest_next_best_actions_for_deal,
+    #       recommend_broker_for_deal  (Phase 4 — registered when those modules land)
+    # 4: semantic_search
+    ss_mod.register(mcp, get_driver)
+    # 5-7: traverse_graph, list_communities, predict_links  (Phase 3)
+    # 8: health_check
     hc_mod.register(mcp, get_driver)
+    # 9: cypher_query (destructive escape hatch — always last)
     cq_mod.register(mcp, get_driver)
 
 

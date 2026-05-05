@@ -54,6 +54,7 @@ INDEXES = [
 ]
 
 VECTOR_INDEXES = [
+    # Node2Vec embeddings (128-dim) — populated by Phase 3 ML enricher
     """CREATE VECTOR INDEX broker_embedding_idx IF NOT EXISTS
        FOR (b:Broker) ON (b.embedding)
        OPTIONS { indexConfig: { `vector.dimensions`: 128, `vector.similarity_function`: 'cosine' } }""",
@@ -63,9 +64,12 @@ VECTOR_INDEXES = [
     """CREATE VECTOR INDEX tenant_embedding_idx IF NOT EXISTS
        FOR (t:Tenant) ON (t.embedding)
        OPTIONS { indexConfig: { `vector.dimensions`: 128, `vector.similarity_function`: 'cosine' } }""",
+    # Insight body embeddings (384-dim) — populated by Phase 2 streaming ingester
+    # using sentence-transformers all-MiniLM-L6-v2.  Different dimension from
+    # Node2Vec, so a separate index is required.
     """CREATE VECTOR INDEX insight_embedding_idx IF NOT EXISTS
        FOR (i:Insight) ON (i.embedding)
-       OPTIONS { indexConfig: { `vector.dimensions`: 128, `vector.similarity_function`: 'cosine' } }""",
+       OPTIONS { indexConfig: { `vector.dimensions`: 384, `vector.similarity_function`: 'cosine' } }""",
 ]
 
 

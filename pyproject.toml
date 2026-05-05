@@ -13,6 +13,7 @@ dependencies = [
     "pyyaml>=6.0.1",
     "click>=8.1.7",
     "apscheduler>=3.10.4",
+    "sentence-transformers>=3.0.0",
 ]
 
 [project.optional-dependencies]
@@ -26,6 +27,7 @@ dev = [
 [project.scripts]
 cre-backfill = "ingester.backfill:main"
 cre-mcp = "mcp_server.server:main"
+cre-ingest = "ingester.streaming:main"
 
 [build-system]
 requires = ["hatchling"]

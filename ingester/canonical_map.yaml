@@ -12,6 +12,8 @@ markets:
     - "dallas ft worth"
     - "dallas-fort worth"
     - "dallas fort worth"
+    - "dfw north - urban"
+    - "dfw north"
   chicago:
     - chicago
     - chi
@@ -20,6 +22,7 @@ markets:
     - nyc
     - "new york city"
     - ny
+    - manhattan
   los angeles:
     - "los angeles"
     - la
@@ -41,6 +44,26 @@ markets:
     - bos
   miami:
     - miami
+  austin:
+    - austin
+    - atx
+  washington dc:
+    - "washington dc"
+    - "washington d.c."
+    - "dc"
+    - "northern virginia"
+    - "nova"
+  denver:
+    - denver
+    - den
+  portland:
+    - portland
+    - pdx
+  san francisco:
+    - "san francisco"
+    - sf
+    - "bay area"
+    - "silicon valley"
 
 asset_classes:
   industrial:
@@ -78,6 +101,12 @@ asset_classes:
     - hospitality
   land:
     - land
+  data-centers:
+    - "data centers"
+    - "data center"
+    - datacenter
+    - datacenters
+    - "data centre"
 
 service_lines:
   tenantrep:
