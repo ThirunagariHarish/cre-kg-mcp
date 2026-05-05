@@ -21,6 +21,7 @@ from ingester.normalizer import (
     landlord_key,
     lease_key,
     client_key,
+    client_display_name,
     taxonomy_key,
     canonical_resolver,
 )
@@ -101,9 +102,35 @@ class TestSimpleKeys:
         row = {"OWNER": "Prologis", "LANDLORD_NAME": ""}
         assert landlord_key(row) == "name::prologis"
 
+    def test_landlord_key_from_owner_name_cre_properties(self):
+        """M8: CRE_PROPERTIES path uses OWNER_NAME — must take priority over LANDLORD_NAME."""
+        row = {"OWNER_NAME": "Prologis Inc", "LANDLORD_NAME": "Should Not Use"}
+        assert landlord_key(row) == "name::prologis inc"
+
     def test_client_key_lowercased(self):
         row = {"CLIENT_NAME": "  WeWork  "}
         assert client_key(row) == "name::wework"
+
+    def test_client_key_prefers_account_name(self):
+        """ACCOUNT_NAME (CRE_SPOC) takes priority over CLIENT_NAME."""
+        row = {"ACCOUNT_NAME": "Acme Corp", "CLIENT_NAME": "Should Not Use"}
+        assert client_key(row) == "name::acme corp"
+
+    def test_client_key_falls_back_to_organization(self):
+        """ORGANIZATION (CRE_PURSUITS) is used when ACCOUNT_NAME absent."""
+        row = {"ORGANIZATION": "WeWork Global", "CLIENT_NAME": "Should Not Use"}
+        assert client_key(row) == "name::wework global"
+
+    def test_client_display_name_fallback_chain(self):
+        """B3: client_display_name uses same fallback as client_key."""
+        row_spoc = {"ACCOUNT_NAME": "CBRE Acme", "ORGANIZATION": "Skip", "CLIENT_NAME": "Skip"}
+        assert client_display_name(row_spoc) == "CBRE Acme"
+
+        row_pursuit = {"ORGANIZATION": "WeWork", "CLIENT_NAME": "Skip"}
+        assert client_display_name(row_pursuit) == "WeWork"
+
+        row_fallback = {"CLIENT_NAME": "Globex"}
+        assert client_display_name(row_fallback) == "Globex"
 
 
 # ---------------------------------------------------------------------------

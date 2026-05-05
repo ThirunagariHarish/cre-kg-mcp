@@ -93,10 +93,16 @@ def bootstrap_schema(driver: Driver) -> None:
         for stmt in INDEXES:
             session.run(stmt)
         for stmt in VECTOR_INDEXES:
+            # N4: extract index name for actionable failure logs
+            idx_name = "unknown"
+            for token in stmt.split():
+                if token.endswith("_idx"):
+                    idx_name = token
+                    break
             try:
                 session.run(stmt)
             except Exception as exc:
-                log.warning("vector_index_skipped", error=str(exc))
+                log.warning("vector_index_skipped", index_name=idx_name, error=str(exc))
     log.info("schema_bootstrap_done")
 
 
@@ -448,6 +454,8 @@ MERGE (pu)-[:HAS_SERVICE_LINE]->(sl)
 
 
 def upsert_pursuit(session: Session, row: dict, c_key: str, broker_key_fn, taxonomy_key_fn) -> None:
+    from ingester.normalizer import client_display_name  # B3: use shared fallback helper
+
     pursuit_id = (row.get("PURSUIT_ID") or row.get("pursuit_id") or "").strip()
     if not pursuit_id:
         log.warning("pursuit_missing_id", row_keys=list(row.keys()))
@@ -456,7 +464,7 @@ def upsert_pursuit(session: Session, row: dict, c_key: str, broker_key_fn, taxon
     session.run(
         PURSUIT_CYPHER,
         client_key=c_key,
-        client_name=(row.get("CLIENT_NAME") or row.get("client_name") or "").strip(),
+        client_name=client_display_name(row),  # B3: ACCOUNT_NAME → ORGANIZATION → CLIENT_NAME
         pursuit_id=pursuit_id,
         stage=(row.get("STAGE") or row.get("stage") or "").strip(),
         probability_pct=_coerce_float(row.get("PROBABILITY") or row.get("probability")),
@@ -501,9 +509,8 @@ MERGE (c:Client {client_key: $client_key})
 ON CREATE SET c.name = $client_name, c.account_type = $account_type, c.last_seen = datetime()
 ON MATCH  SET c.name = $client_name, c.last_seen = datetime()
 WITH b, c
-MERGE (b)-[s:SPOC_FOR {service_line: $service_line}]->(c)
+MERGE (b)-[s:SPOC_FOR {service_line: $service_line, asset_class: $asset_class}]->(c)
 SET s.geography      = $geography,
-    s.asset_class    = $asset_class,
     s.effective_from = $effective_from,
     s.expires_on     = $expires_on,
     s.is_active      = $is_active

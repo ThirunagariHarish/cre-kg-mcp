@@ -2,12 +2,20 @@
 CRE Knowledge Graph MCP Server — stdio transport.
 
 Tool registration order follows api-contracts.md §11.
-Each tool lives in its own module under mcp_server/tools/.
-Phase 2 (ingester/) and Phase 3 (ml/) tools are registered by importing their
-own register() functions here — no editing of existing tool files required.
+Each tool lives in its own module under mcp_server/tools/ and must expose a
+`register(mcp_server, driver_factory)` function.
+
+M7: Tools are discovered automatically via pkgutil.iter_modules so that
+    Phase 3 can add list_communities, predict_links, traverse_graph by
+    dropping module files — no editing of this file required and no
+    merge-collision risk across parallel branches.
+
+Registration order is controlled by the ORDER list below.  Modules found by
+auto-discovery that are NOT in ORDER are appended alphabetically after the
+ordered set (safe default for new phases).
 
 Reserved module paths (do NOT create files here in Phase 1):
-  mcp_server/tools/semantic_search.py      — Phase 2
+  mcp_server/tools/semantic_search.py      — Phase 2 (already present)
   mcp_server/tools/traverse_graph.py       — Phase 3
   mcp_server/tools/list_communities.py     — Phase 3
   mcp_server/tools/predict_links.py        — Phase 3
@@ -17,11 +25,16 @@ Reserved module paths (do NOT create files here in Phase 1):
 
 from __future__ import annotations
 
+import importlib
+import pkgutil
+from typing import Callable
+
 import structlog
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
 from mcp_server.neo4j_client import get_driver
+import mcp_server.tools as _tools_pkg
 
 load_dotenv()
 
@@ -37,29 +50,61 @@ mcp = FastMCP(
     ),
 )
 
+# api-contracts.md §11 registration order.
+# Modules present on disk but absent from this list are appended alphabetically.
+_TOOL_ORDER = [
+    "find_matching_properties_for_insight",   # 1  — Phase 4
+    "suggest_next_best_actions_for_deal",     # 2  — Phase 4
+    "recommend_broker_for_deal",              # 3  — Phase 4
+    "semantic_search",                         # 4  — Phase 2
+    "traverse_graph",                          # 5  — Phase 3
+    "list_communities",                        # 6  — Phase 3
+    "predict_links",                           # 7  — Phase 3
+    "health_check",                            # 8
+    "cypher_query",                            # 9  — always last (destructive)
+]
+
+
+def _discover_tool_modules() -> list[str]:
+    """
+    Return module base-names found under mcp_server/tools/, ordered per
+    _TOOL_ORDER with unknowns appended alphabetically.
+    """
+    found = {
+        mod.name
+        for mod in pkgutil.iter_modules(_tools_pkg.__path__)
+        if not mod.name.startswith("_")
+    }
+    ordered = [name for name in _TOOL_ORDER if name in found]
+    extras = sorted(found - set(_TOOL_ORDER))
+    return ordered + extras
+
 
 def register_all_tools() -> None:
     """
-    Import and register every tool module.
+    Auto-discover and register every tool module under mcp_server/tools/.
 
-    Add new tool imports here as new phases land — never modify individual
-    tool files to add registrations.
+    Each module must expose register(mcp_server, driver_factory).
+    Missing register() is logged and skipped — it does not abort startup.
     """
-    from mcp_server.tools import health_check as hc_mod
-    from mcp_server.tools import cypher_query as cq_mod
-    # Phase 2 tools (api-contracts.md §11 order: semantic_search at position 4)
-    from mcp_server.tools import semantic_search as ss_mod
+    for mod_name in _discover_tool_modules():
+        full_name = f"mcp_server.tools.{mod_name}"
+        try:
+            module = importlib.import_module(full_name)
+        except ImportError as exc:
+            log.warning("tool_module_import_failed", module=full_name, error=str(exc))
+            continue
 
-    # Registration order per api-contracts.md §11:
-    # 1-3: find_matching_properties_for_insight, suggest_next_best_actions_for_deal,
-    #       recommend_broker_for_deal  (Phase 4 — registered when those modules land)
-    # 4: semantic_search
-    ss_mod.register(mcp, get_driver)
-    # 5-7: traverse_graph, list_communities, predict_links  (Phase 3)
-    # 8: health_check
-    hc_mod.register(mcp, get_driver)
-    # 9: cypher_query (destructive escape hatch — always last)
-    cq_mod.register(mcp, get_driver)
+        register_fn: Callable | None = getattr(module, "register", None)
+        if register_fn is None:
+            log.warning("tool_module_no_register", module=full_name)
+            continue
+
+        try:
+            register_fn(mcp, get_driver)
+            log.debug("tool_registered", module=mod_name)
+        except Exception as exc:
+            log.error("tool_register_failed", module=full_name, error=str(exc))
 
 
 def main() -> None:

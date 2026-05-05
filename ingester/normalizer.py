@@ -150,6 +150,24 @@ def client_key(row: dict) -> str:
     return f"name::{name}"
 
 
+def client_display_name(row: dict) -> str:
+    """
+    B3: Returns the best available display name for a Client node.
+
+    Applies the same fallback chain as client_key() so the node's `name`
+    property is never empty when the key is non-empty.
+
+    Fallback order: ACCOUNT_NAME (CRE_SPOC) → ORGANIZATION (CRE_PURSUITS) → CLIENT_NAME.
+    """
+    return (
+        row.get("ACCOUNT_NAME")
+        or row.get("ORGANIZATION")
+        or row.get("CLIENT_NAME")
+        or row.get("client_name")
+        or ""
+    ).strip()
+
+
 def broker_key_from_pursuit(row: dict) -> str:
     """
     Builds a broker merge key from a CRE_PURSUITS row.

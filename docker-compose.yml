@@ -34,7 +34,7 @@ services:
         - "CMD-SHELL"
         - |
           cypher-shell -u neo4j -p "${NEO4J_PASSWORD:-hackathon_local_only}" \
-            "CALL gds.version() YIELD version RETURN version" \
+            "CALL gds.version() YIELD gdsVersion RETURN gdsVersion" \
             2>&1 | grep -v "^$" | tail -1
       interval: 15s
       timeout: 10s

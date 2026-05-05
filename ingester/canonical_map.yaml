@@ -64,6 +64,25 @@ markets:
     - sf
     - "bay area"
     - "silicon valley"
+  # M1 (remaining): additional markets
+  las vegas:
+    - "las vegas"
+    - lv
+    - lvnv
+  minneapolis:
+    - minneapolis
+    - "minneapolis-st. paul"
+    - "twin cities"
+    - msp
+  sacramento:
+    - sacramento
+    - sac
+  san antonio:
+    - "san antonio"
+    - sat
+  san diego:
+    - "san diego"
+    - sd
 
 asset_classes:
   industrial:
@@ -107,6 +126,14 @@ asset_classes:
     - datacenter
     - datacenters
     - "data centre"
+  # M1 (remaining): life sciences
+  life-sciences:
+    - "life sciences"
+    - "life science"
+    - lifesciences
+    - biotech
+    - "r&d"
+    - "research & development"
 
 service_lines:
   tenantrep:
@@ -134,3 +161,87 @@ service_lines:
   valuation:
     - valuation
     - appraisal
+  # M1 (remaining): new service lines
+  occupier-services:
+    - "occupier services"
+    - "occupier"
+    - os
+    - "workplace solutions"
+  project-management:
+    - "project management"
+    - "project mgmt"
+    - pjm
+
+# M2: Submarket canonicalization.
+# Seeded from known variants observed in CRE_PROPERTIES / CRE_LEASE_COMPS.
+# Pattern: canonical form (lowercase, hyphenated) → list of raw aliases.
+# DFW submarkets sourced from CRE_PROPERTIES SUBMARKET column observations.
+# NYC/Midtown/Downtown: standard broker market parlance.
+# Common variant "DFW North - Urban" -> "dfw-north" aligns with market alias above.
+submarkets:
+  # Dallas-Fort Worth
+  uptown-dallas:
+    - "uptown dallas"
+    - uptown
+    - "uptown/turtle creek"
+  downtown-dallas:
+    - "downtown dallas"
+    - "cbd dallas"
+    - "dallas cbd"
+  frisco-plano:
+    - "frisco/plano"
+    - frisco
+    - plano
+  las-colinas:
+    - "las colinas"
+    - irving
+  dfw-north:
+    - "dfw north"
+    - "dfw north - urban"
+    - "dfw north-urban"
+    - "north dallas"
+  fort-worth-cbd:
+    - "fort worth cbd"
+    - "downtown fort worth"
+    - "fort worth downtown"
+  # New York / Manhattan
+  midtown:
+    - "midtown manhattan"
+    - midtown
+    - "midtown south"
+  downtown-manhattan:
+    - "downtown manhattan"
+    - "lower manhattan"
+    - "financial district"
+    - fidi
+  brooklyn:
+    - brooklyn
+    - "brooklyn ny"
+  # Los Angeles
+  downtown-la:
+    - "downtown la"
+    - "dtla"
+    - "downtown los angeles"
+  west-la:
+    - "west la"
+    - "west los angeles"
+    - westwood
+    - "santa monica"
+  # Chicago
+  loop:
+    - loop
+    - "chicago loop"
+    - "the loop"
+  north-michigan-ave:
+    - "north michigan avenue"
+    - "magnificent mile"
+    - "mag mile"
+  # San Francisco
+  south-of-market:
+    - soma
+    - "south of market"
+    - "south of market sf"
+  financial-district-sf:
+    - "financial district sf"
+    - "financial district san francisco"
+    - "sf financial district"

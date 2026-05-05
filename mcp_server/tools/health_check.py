@@ -62,16 +62,16 @@ def _get_latest_insight_age_minutes(session) -> tuple[float | None, list[str]]:
 
 
 def _get_gds_version(session) -> str:
-    # GDS 2.6.x returns gdsVersion column; earlier versions returned version
+    # GDS 2.6.x returns the column named gdsVersion (verified against real GDS 2.6 release notes).
+    # Earlier versions used a column named `version`; we fall through to that as a safety net.
     for query, col in [
         ("CALL gds.version() YIELD gdsVersion", "gdsVersion"),
         ("CALL gds.version() YIELD version", "version"),
-        ("CALL gds.version()", "gdsVersion"),
     ]:
         try:
             result = session.run(query)
             row = result.single()
-            if row:
+            if row and row[col]:
                 return row[col]
         except Exception:
             continue
@@ -115,7 +115,12 @@ async def run_health_check(driver) -> dict[str, Any]:
             "status": "OK",
             "neo4j_reachable": True,
             "gds": gds_version,
-            "snowflake": "ok",
+            # B2: The MCP process is read-only against Neo4j and has no Snowflake
+            # connection by design.  Snowflake liveness is reflected indirectly via
+            # latest_insight_age_minutes — if ingestion has stalled, that value will
+            # grow and trigger the staleness warning.  We never claim Snowflake is "ok"
+            # here because we cannot probe it from this process.
+            "snowflake": "not_probed_by_mcp_process",
             "node_counts": node_counts,
             "edge_counts": edge_counts,
             "latest_insight_age_minutes": insight_age_minutes,
@@ -129,7 +134,7 @@ async def run_health_check(driver) -> dict[str, Any]:
             "status": "DEGRADED",
             "neo4j_reachable": False,
             "gds": "unknown",
-            "snowflake": "unknown",
+            "snowflake": "not_probed_by_mcp_process",
             "node_counts": {},
             "edge_counts": {},
             "error": str(exc),

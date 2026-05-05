@@ -47,6 +47,7 @@ def get_connection() -> snowflake.connector.SnowflakeConnection:
     Logs clearly before propagating.
     """
     params = _get_connection_params()
+    # N3: never log password — reference only safe fields explicitly
     log.info(
         "snowflake_connecting",
         account=params["account"],

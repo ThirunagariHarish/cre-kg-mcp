@@ -31,13 +31,10 @@ def _make_mock_driver(gds_version="2.6.0", node_rows=None, edge_rows=None, raise
     mock_driver.session.return_value.__enter__ = lambda s: mock_session
     mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
 
-    # _get_gds_version tries:
-    #   1. "CALL gds.version() YIELD gdsVersion" -> col "gdsVersion"
-    #   2. "CALL gds.version() YIELD version"    -> col "version"  (this one works)
-    #   3. bare fallback (not reached if #2 works)
-    # Mock attempt 1 to return a row WITHOUT gdsVersion so KeyError bubbles -> next attempt
-    gds_result_fail = MagicMock()
-    gds_result_fail.single.return_value = {"gdsVersion": gds_version}  # attempt 1 succeeds on gdsVersion
+    # _get_gds_version (M6): GDS 2.6 returns gdsVersion column.
+    # First attempt "CALL gds.version() YIELD gdsVersion" succeeds directly.
+    gds_result_ok = MagicMock()
+    gds_result_ok.single.return_value = {"gdsVersion": gds_version}
 
     # node count result
     node_rows = node_rows or [{"label": "Broker", "cnt": 100}, {"label": "Property", "cnt": 500}]
@@ -49,8 +46,12 @@ def _make_mock_driver(gds_version="2.6.0", node_rows=None, edge_rows=None, raise
     edge_result = MagicMock()
     edge_result.__iter__ = lambda s: iter(edge_rows)
 
-    # side_effect: first call=gds attempt1 (returns gdsVersion), then node, then edge
-    mock_session.run.side_effect = [gds_result_fail, node_result, edge_result]
+    # insight age result (no Insight nodes yet)
+    insight_result = MagicMock()
+    insight_result.single.return_value = None
+
+    # side_effect order: gds -> node_counts -> edge_counts -> insight_age
+    mock_session.run.side_effect = [gds_result_ok, node_result, edge_result, insight_result]
 
     return mock_driver
 
@@ -62,7 +63,7 @@ async def test_health_check_ok_status():
     assert result["status"] == "OK"
     assert result["neo4j_reachable"] is True
     assert result["gds"] == "2.6.0"
-    assert result["snowflake"] == "ok"
+    assert result["snowflake"] == "not_probed_by_mcp_process"
 
 
 @pytest.mark.asyncio

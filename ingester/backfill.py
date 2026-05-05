@@ -20,9 +20,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-import structlog
-logging = structlog.get_logger()
-
 from ingester.snowflake_client import get_connection, probe_tables, fetch_all
 from ingester.graph_writer import (
     get_driver,
@@ -97,7 +94,6 @@ def run_backfill() -> None:
             for row in batch:
                 try:
                     pk = property_key(row)
-                    lk = landlord_key(row)
                     upsert_property(session, row, pk, landlord_key, taxonomy_key)
                     n += 1
                 except Exception as exc:
