@@ -74,7 +74,7 @@ MATCH (n) RETURN labels(n)[0] AS label, count(n) AS cnt ORDER BY cnt DESC
 Copy the snippet from `examples/claude_desktop_config.json` into that file (merge
 into any existing `mcpServers` block):
 
-> **Note:** Replace `/Users/harishkumar/.local/bin/uv` with the output of `which uv` on your machine before pasting the block below.
+> **Note:** Replace `<ABSOLUTE_PATH_TO_UV>` with the output of `which uv` on your machine, and `<ABSOLUTE_PATH_TO_REPO>` with the absolute path to your cloned repo. See `SETUP.md` for the full walkthrough.
 
 > **Note on Snowflake env vars:** The MCP server is read-only Neo4j by design and does not connect to Snowflake directly. Snowflake env vars (`SNOWFLAKE_*`) are consumed only by the ingester and backfill scripts — they are NOT needed in `claude_desktop_config.json`.
 
@@ -82,11 +82,11 @@ into any existing `mcpServers` block):
 {
   "mcpServers": {
     "cre-kg": {
-      "command": "/Users/harishkumar/.local/bin/uv",
+      "command": "<ABSOLUTE_PATH_TO_UV>",
       "args": [
         "run",
         "--project",
-        "/Users/harishkumar/Projects",
+        "<ABSOLUTE_PATH_TO_REPO>",
         "python",
         "-m",
         "mcp_server.server"
