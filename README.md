@@ -3,7 +3,8 @@
 Commercial Real Estate knowledge graph powered by Neo4j + GDS, seeded from
 Snowflake, and exposed to Claude Desktop via MCP tools.
 
-**Hackathon Phase 3** — ML enrichment: Node2Vec embeddings, Louvain community detection, link prediction + `traverse_graph`, `list_communities`, `predict_links` MCP tools.
+**Hackathon Phase 4** — High-level NL tools: `find_matching_properties_for_insight`,
+`suggest_next_best_actions_for_deal`, `recommend_broker_for_deal` + demo script.
 
 ---
 
@@ -63,7 +64,14 @@ MATCH (n) RETURN labels(n)[0] AS label, count(n) AS cnt ORDER BY cnt DESC
 
 ### 4. Connect Claude Desktop
 
-Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+#### macOS config location
+
+```
+~/Library/Application Support/Claude/claude_desktop_config.json
+```
+
+Copy the snippet from `examples/claude_desktop_config.json` into that file (merge
+into any existing `mcpServers` block):
 
 ```json
 {
@@ -88,10 +96,34 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-Restart Claude Desktop. You should see 3 tools available:
-`semantic_search`, `health_check`, and `cypher_query`.
+**Restart Claude Desktop** (quit completely, then re-open) after editing the
+config file. Claude Desktop auto-discovers tools on startup.
+
+After restart you should see **9 tools** available:
+`find_matching_properties_for_insight`, `suggest_next_best_actions_for_deal`,
+`recommend_broker_for_deal`, `semantic_search`, `traverse_graph`,
+`list_communities`, `predict_links`, `health_check`, `cypher_query`.
 
 Ask Claude: **"Run a health check on the CRE graph"**
+
+#### Sample Claude prompts for the 3 canonical questions
+
+**Q1 — Finding matching properties from a market insight:**
+```
+Based on the latest Dallas Industrial absorption insight, what are the matching
+properties and brokers I can reach out to?
+```
+
+**Q2 — Next best actions on a stalled deal:**
+```
+Based on my deal PUR-001 in its current state, what actions can I take?
+```
+
+**Q3 — Best broker recommendation:**
+```
+Who is the best broker to work with me on an Industrial deal in Dallas
+for tenant representation?
+```
 
 ---
 
@@ -294,6 +326,80 @@ non-Insight labels remains DEGRADED until Phase 4 unification.
 
 ---
 
+---
+
+## Phase 4 — High-Level NL Tools + Demo
+
+Phase 4 adds three intent-named tools that answer the three canonical PRD
+questions using graph traversal + ML signal. These tools are auto-discovered by
+the MCP server — no server.py edit required.
+
+### Running the end-to-end demo
+
+```bash
+bash scripts/demo.sh
+```
+
+This script: starts Neo4j, runs backfill if needed, starts the ingester and ML
+worker in the background, polls until enrichments are ready (50+ Insights,
+embeddings, communities, predicted links), then prints:
+
+```
+Ready to demo. Now in Claude Desktop ask: ...
+```
+
+### Tool: `find_matching_properties_for_insight` (Q1)
+
+Given a market insight (by ID or free text), surfaces matching properties and
+brokers.
+
+```
+"Based on the latest Dallas Industrial absorption insight, what are the
+matching properties and brokers I can reach out to?"
+```
+
+Internally:
+1. Resolves the insight via ID or `semantic_search`.
+2. Extracts Market + AssetClass from `:ABOUT` edges.
+3. Finds properties via `LOCATED_IN` + `CLASSIFIED_AS`.
+4. Finds brokers via `COVERS` + `SPECIALIZES_IN` + `BROKERED_BY`.
+5. Ranks properties by (asset_class × 0.40 + market × 0.40 + recency × 0.20).
+
+### Tool: `suggest_next_best_actions_for_deal` (Q2)
+
+Given a Pursuit ID, recommends next actions based on similar historical deals.
+
+```
+"Based on my deal PUR-001 in its current state, what actions can I take?"
+```
+
+Returns: comparable pursuits, the brokers who closed them, suggested actions,
+related insights from the same market/asset class, and SPOC contacts.
+
+When no comparables exist, returns a transparent fallback message rather than
+fabricating actions.
+
+### Tool: `recommend_broker_for_deal` (Q3)
+
+Recommends brokers for a deal by market + asset class + service line.
+
+```
+"Who is the best broker to work with me on an Industrial deal in Dallas
+for tenant representation?"
+```
+
+Ranking weights (documented in `mcp_server/ranker.py`):
+- Deal volume in market: 0.40
+- Asset-class specialization: 0.25
+- Active SPOC assignment: 0.20
+- Community overlap: 0.10
+- Predicted affinity score: 0.05
+
+Expired SPOCs are flagged (`spoc_status: "expired"`) and ranked lower — never
+silently dropped.
+
+---
+
 ## Running Tests
 
 ```bash
@@ -337,8 +443,7 @@ Snowflake HACKATHON.PUBLIC ←── CRE_INSIGHTS_DELTA ←── CRE_INSIGHTS_S
     (read-only, ACCOUNTADMIN)      (staging table)       (on CRE_MARKET_INSIGHTS)
 ```
 
-Phase 3 will add `ingester/ml_enricher.py` + GDS Node2Vec / Louvain / link prediction.
-Phase 4 will add 3 high-level tools: `find_matching_properties_for_insight`,
+Phase 4 added 3 high-level NL tools: `find_matching_properties_for_insight`,
 `suggest_next_best_actions_for_deal`, `recommend_broker_for_deal`.
 
 ---
@@ -351,33 +456,58 @@ Phase 4 will add 3 high-level tools: `find_matching_properties_for_insight`,
 ├── docker-compose.yml           # Neo4j 5.15 + GDS
 ├── pyproject.toml               # uv/hatch Python project
 ├── Makefile                     # bootstrap / backfill / mcp / test targets
+├── examples/
+│   └── claude_desktop_config.json  # Claude Desktop MCP config snippet
+├── scripts/
+│   ├── backfill.py              # convenience entry point for full backfill
+│   └── demo.sh                  # end-to-end demo launcher
 ├── ingester/
 │   ├── snowflake_client.py      # Snowflake auth + batched fetch
 │   ├── normalizer.py            # merge-key derivation + taxonomy canonicalization
 │   ├── canonical_map.yaml       # market / asset-class / service-line aliases
 │   ├── graph_writer.py          # Neo4j MERGE templates + schema bootstrap
 │   ├── backfill.py              # backfill orchestrator (locked order)
-│   └── streaming.py             # Phase 2: long-running insight ingester (poll+embed)
+│   ├── streaming.py             # Phase 2: long-running insight ingester (poll+embed)
+│   └── embedding.py             # shared sentence-transformers embed helper
+├── ml/
+│   ├── embeddings.py            # Phase 3: Node2Vec embeddings
+│   ├── communities.py           # Phase 3: Louvain community detection
+│   ├── link_prediction.py       # Phase 3: link prediction (adamicAdar)
+│   └── refresh.py               # Phase 3: scheduled ML refresh worker
 ├── mcp_server/
-│   ├── server.py                # FastMCP stdio server + tool registry
+│   ├── server.py                # FastMCP stdio server + auto-discovery
 │   ├── neo4j_client.py          # read-only driver singleton
+│   ├── ranker.py                # Phase 4: shared ranking helpers + weight constants
 │   └── tools/
-│       ├── health_check.py      # health_check MCP tool (+ freshness reporting)
+│       ├── health_check.py      # health_check MCP tool
 │       ├── cypher_query.py      # cypher_query MCP tool (debug only)
-│       └── semantic_search.py   # Phase 2: semantic_search MCP tool
+│       ├── semantic_search.py   # Phase 2: semantic_search MCP tool
+│       ├── traverse_graph.py    # Phase 3: graph BFS traversal
+│       ├── list_communities.py  # Phase 3: Louvain community listing
+│       ├── predict_links.py     # Phase 3: link prediction results
+│       ├── find_matching_properties_for_insight.py  # Phase 4: Q1 tool
+│       ├── suggest_next_best_actions_for_deal.py    # Phase 4: Q2 tool
+│       └── recommend_broker_for_deal.py             # Phase 4: Q3 tool
 ├── sql/
 │   └── streams/
-│       └── insights_stream.sql  # Phase 2: Snowflake Stream + Task DDL (idempotent)
-├── scripts/
-│   └── backfill.py              # convenience entry point
+│       └── insights_stream.sql  # Snowflake Stream + Task DDL (idempotent)
 └── tests/
-    ├── test_normalizer.py            # pure unit tests for merge keys + taxonomy
-    ├── test_snowflake_client.py      # mocked Snowflake connection tests
-    ├── test_health_check.py          # mocked Neo4j driver tests
-    ├── test_cypher_query.py          # read-only enforcement tests
-    ├── test_graph_writer.py          # testcontainers integration tests
-    ├── test_mcp_registration.py      # tool registration smoke tests
-    ├── test_streaming_ingester.py    # Phase 2: mocked Snowflake + Neo4j upsert tests
-    ├── test_insight_normalization.py # Phase 2: unmapped taxonomy pass-through tests
-    └── test_semantic_search.py       # Phase 2: mocked embedding ranking tests
+    ├── test_normalizer.py
+    ├── test_snowflake_client.py
+    ├── test_health_check.py
+    ├── test_cypher_query.py
+    ├── test_graph_writer.py
+    ├── test_mcp_registration.py
+    ├── test_streaming_ingester.py
+    ├── test_insight_normalization.py
+    ├── test_semantic_search.py
+    ├── test_traverse_graph.py
+    ├── test_communities.py
+    ├── test_link_prediction.py
+    ├── test_embeddings.py
+    ├── test_refresh_scheduler.py
+    ├── test_ranker.py                  # Phase 4: ranking helpers
+    ├── test_find_matching.py           # Phase 4: Q1 tool tests
+    ├── test_next_best_actions.py       # Phase 4: Q2 tool tests
+    └── test_recommend_broker.py        # Phase 4: Q3 tool tests
 ```
