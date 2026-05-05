@@ -25,35 +25,15 @@ from typing import Any, Optional
 
 import structlog
 
+# N-P2-1: Use shared embedding module so the 80 MB model is loaded once per process.
+from ingester.embedding import encode as _embedding_encode
+
 log = structlog.get_logger()
-
-# Lazy-load the sentence-transformers model to avoid import overhead in tests
-_model = None
-_TRANSFORMERS_AVAILABLE = False
-
-try:
-    from sentence_transformers import SentenceTransformer  # type: ignore
-    _TRANSFORMERS_AVAILABLE = True
-except ImportError:
-    pass
-
-
-def _get_model():
-    global _model
-    if _model is None:
-        if not _TRANSFORMERS_AVAILABLE:
-            raise RuntimeError("sentence-transformers not installed")
-        log.info("semantic_search_model_loading", model="all-MiniLM-L6-v2")
-        _model = SentenceTransformer("all-MiniLM-L6-v2")
-        log.info("semantic_search_model_loaded")
-    return _model
 
 
 def _embed_query(text: str) -> list[float]:
     """Embed query text using all-MiniLM-L6-v2, returning a 384-dim vector."""
-    model = _get_model()
-    vec = model.encode(text, normalize_embeddings=True)
-    return vec.tolist()
+    return _embedding_encode(text)
 
 
 def _cosine_similarity(a: list[float], b: list[float]) -> float:
@@ -161,23 +141,38 @@ def _build_insight_filter(
     asset_class: Optional[str],
     date_from: Optional[str],
     date_to: Optional[str],
-) -> str:
-    """Build a Cypher WHERE fragment for Insight filters."""
-    q = "'"  # single quote character — avoids f-string nesting issues
-    clauses = []
+) -> tuple[str, dict]:
+    """
+    Build a Cypher WHERE fragment for Insight filters using named driver
+    parameters (B-P2-1: eliminates Cypher injection — no value ever reaches
+    the query string as a literal).
+
+    Returns:
+        (where_clause, params) where where_clause is a string of zero or more
+        ``AND …`` predicates to append after the static WHERE in _INSIGHT_QUERY,
+        and params is a dict to merge into the session.run() call.
+
+    N-P2-3: Caller prepends "WHERE i.embedding IS NOT NULL" then appends
+    the returned clause; the AND prefix keeps syntax valid for any non-empty
+    clause list.
+    """
+    clauses: list[str] = []
+    params: dict[str, Any] = {}
+
     if market:
-        m = market.replace("'", "")
-        clauses.append(f"AND toLower(i.market) = toLower({q}{m}{q})")
+        clauses.append("AND toLower(i.market) = toLower($filter_market)")
+        params["filter_market"] = market
     if asset_class:
-        ac = asset_class.replace("'", "")
-        clauses.append(f"AND toLower(i.asset_class) = toLower({q}{ac}{q})")
+        clauses.append("AND toLower(i.asset_class) = toLower($filter_asset_class)")
+        params["filter_asset_class"] = asset_class
     if date_from:
-        df = date_from.replace("'", "")
-        clauses.append(f"AND i.published_at >= datetime({q}{df}{q})")
+        clauses.append("AND i.published_at >= datetime($filter_date_from)")
+        params["filter_date_from"] = date_from
     if date_to:
-        dt_ = date_to.replace("'", "")
-        clauses.append(f"AND i.published_at <= datetime({q}{dt_}{q})")
-    return " ".join(clauses)
+        clauses.append("AND i.published_at <= datetime($filter_date_to)")
+        params["filter_date_to"] = date_to
+
+    return " ".join(clauses), params
 
 
 async def run_semantic_search(
@@ -203,6 +198,22 @@ async def run_semantic_search(
         }
 
     config = _LABEL_CONFIG[label]
+
+    # M-P2-1: text-query similarity for non-Insight labels not yet supported.
+    # Insight embeddings are 384-dim (sentence-transformers all-MiniLM-L6-v2).
+    # Broker/Property/Tenant embeddings are 128-dim (Node2Vec, Phase 3).
+    # TODO(phase-3-embedding-unification): once Phase 3 unifies embedding dims
+    # (or adds a separate text→128-dim encoder), remove this guard and wire
+    # _embed_query through the correct model for each label.
+    if query_text and label != "Insight":
+        return {
+            "status": "DEGRADED",
+            "error": (
+                "Text-query similarity for non-Insight labels not yet supported "
+                "(Phase 3 will unify embeddings)"
+            ),
+            "results": [],
+        }
 
     # --- Obtain query embedding ---
     query_embedding: Optional[list[float]] = None
@@ -253,17 +264,19 @@ async def run_semantic_search(
     # --- Fetch candidate nodes ---
     try:
         with driver.session() as session:
-            # Build filter clause for Insight queries
-            filter_clause = ""
             if label == "Insight":
-                filter_clause = _build_insight_filter(
+                # B-P2-1: all filter values go through named driver parameters —
+                # no literal interpolation into Cypher string.
+                filter_clause, filter_params = _build_insight_filter(
                     filter_market, filter_asset_class, filter_date_from, filter_date_to
                 )
                 cypher = config["list_query_template"].format(filter_clause=filter_clause)
+                result = session.run(cypher, **filter_params)
             else:
-                cypher = config["list_query_template"].format(filter_clause="")
-
-            result = session.run(cypher)
+                # B-P2-2: Broker/Property/Tenant templates have NO {filter_clause}
+                # placeholder — use the template literal directly, no .format().
+                cypher = config["list_query_template"]
+                result = session.run(cypher)
             candidates = [dict(r) for r in result]
     except Exception as exc:
         return {
@@ -273,10 +286,18 @@ async def run_semantic_search(
             "truncated": False,
         }
 
+    # M-P2-5: correct empty-candidates path per api-contracts §3.
     if not candidates:
+        if label == "Insight":
+            return {
+                "status": "DEGRADED",
+                "error": "No Insight nodes with embeddings found",
+                "results": [],
+                "truncated": False,
+            }
         return {
             "status": "DEGRADED",
-            "error": "Embeddings not yet generated; run ML enrichment" if label != "Insight" else None,
+            "error": "Embeddings not yet generated; run ML enrichment",
             "results": [],
             "truncated": False,
         }
@@ -318,12 +339,8 @@ async def run_semantic_search(
 
         results.append(entry)
 
-    status = "OK" if results else "OK"
-    if not candidates:
-        status = "DEGRADED"
-
     return {
-        "status": status,
+        "status": "OK",
         "label": label,
         "results": results,
         "truncated": truncated,

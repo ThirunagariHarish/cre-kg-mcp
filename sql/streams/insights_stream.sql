@@ -1,6 +1,9 @@
 -- =============================================================================
 -- CRE Market Insights — Snowflake Stream + Task Setup
--- Idempotent: safe to re-run; uses CREATE OR REPLACE / IF NOT EXISTS
+-- Idempotent: safe to re-run.
+-- M-P2-3: SUSPEND Task before any DDL that touches CRE_INSIGHTS_DELTA, then
+--         RESUME at the end.  Delta table uses CREATE TABLE IF NOT EXISTS so
+--         re-running never drops live unprocessed rows.
 -- =============================================================================
 -- Source table: HACKATHON.PUBLIC.CRE_MARKET_INSIGHTS (already exists, 50 rows)
 --
@@ -19,12 +22,14 @@ CREATE OR REPLACE STREAM HACKATHON.PUBLIC.CRE_INSIGHTS_STREAM
   ON TABLE HACKATHON.PUBLIC.CRE_MARKET_INSIGHTS
   APPEND_ONLY = TRUE;
 
--- Step 2: Delta / staging table for the ingester to poll
---   processed BOOLEAN tracks which rows the Python ingester has consumed.
---   Re-running this statement is safe: OR REPLACE recreates the empty schema.
---   (Live rows in an existing DELTA table will be lost; this is acceptable
---   at hackathon scale — the ingester's Neo4j MERGE is idempotent.)
-CREATE OR REPLACE TABLE HACKATHON.PUBLIC.CRE_INSIGHTS_DELTA (
+-- Step 2a: M-P2-3 — SUSPEND the task before touching the delta table.
+--   IF EXISTS prevents a hard error on first run when the task doesn't yet exist.
+ALTER TASK IF EXISTS HACKATHON.PUBLIC.CRE_INSIGHTS_TASK SUSPEND;
+
+-- Step 2b: Delta / staging table for the ingester to poll.
+--   CREATE TABLE IF NOT EXISTS preserves live unprocessed rows on re-run.
+--   (On first run it creates the table; subsequent runs are no-ops here.)
+CREATE TABLE IF NOT EXISTS HACKATHON.PUBLIC.CRE_INSIGHTS_DELTA (
   INSIGHT_ID      STRING        NOT NULL,
   TITLE           STRING,
   BODY            STRING,
@@ -44,10 +49,12 @@ CREATE OR REPLACE TABLE HACKATHON.PUBLIC.CRE_INSIGHTS_DELTA (
   DELTA_CREATED_AT TIMESTAMP_NTZ NOT NULL DEFAULT CURRENT_TIMESTAMP()
 );
 
--- Step 3: Task that materialises new stream rows into the delta table
+-- Step 3: Task that materialises new stream rows into the delta table.
 --   Schedule: 1 MINUTE (minimum allowed; aligns with ingester 60-s poll).
 --   Warehouse: parameterised via env var at setup time; falls back to COMPUTE_WH.
 --   The task only fires when the stream has new rows (WHEN SYSTEM$STREAM_HAS_DATA).
+--   CREATE OR REPLACE TASK is safe here — the task body is idempotent and we
+--   SUSPENDed before this block so no in-flight execution is interrupted.
 CREATE OR REPLACE TASK HACKATHON.PUBLIC.CRE_INSIGHTS_TASK
   WAREHOUSE = COMPUTE_WH
   SCHEDULE  = '1 MINUTE'
@@ -66,7 +73,7 @@ AS
     CURRENT_TIMESTAMP()
   FROM HACKATHON.PUBLIC.CRE_INSIGHTS_STREAM;
 
--- Step 4: Resume the task (tasks are SUSPENDED by default after CREATE)
+-- Step 4: Resume the task (tasks are SUSPENDED by default after CREATE OR REPLACE)
 ALTER TASK HACKATHON.PUBLIC.CRE_INSIGHTS_TASK RESUME;
 
 -- Verification queries (run manually to confirm):

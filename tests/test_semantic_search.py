@@ -25,6 +25,7 @@ from mcp_server.tools.semantic_search import (
     run_semantic_search,
     _cosine_similarity,
     _build_insight_filter,
+    _LABEL_CONFIG,
 )
 
 
@@ -123,28 +124,100 @@ class TestCosineSimilarity:
 # ---------------------------------------------------------------------------
 
 class TestBuildInsightFilter:
-    def test_empty_filter_returns_empty_string(self):
-        result = _build_insight_filter(None, None, None, None)
-        assert result == ""
+    """B-P2-1: _build_insight_filter must return (clause, params) with no literals."""
 
-    def test_market_filter_included(self):
-        result = _build_insight_filter("Atlanta", None, None, None)
-        assert "market" in result.lower() or "atlanta" in result.lower()
+    def test_empty_filter_returns_empty_string_and_no_params(self):
+        clause, params = _build_insight_filter(None, None, None, None)
+        assert clause == ""
+        assert params == {}
 
-    def test_date_from_included(self):
-        result = _build_insight_filter(None, None, "2026-01-01", None)
-        assert "2026-01-01" in result
+    def test_market_filter_uses_named_param_not_literal(self):
+        """B-P2-1: market value must go through a $param, never inline."""
+        clause, params = _build_insight_filter("Atlanta", None, None, None)
+        # Param key exists; literal value NOT in clause string
+        assert "filter_market" in params
+        assert params["filter_market"] == "Atlanta"
+        assert "Atlanta" not in clause, "Literal value must not appear in clause string"
+        assert "$filter_market" in clause
 
-    def test_date_to_included(self):
-        result = _build_insight_filter(None, None, None, "2026-12-31")
-        assert "2026-12-31" in result
+    def test_injection_attempt_safely_parameterized(self):
+        """B-P2-1: value containing quotes reaches params dict, not Cypher string."""
+        evil = "' OR 1=1 OR i.market = '"
+        clause, params = _build_insight_filter(evil, None, None, None)
+        assert params.get("filter_market") == evil
+        assert evil not in clause, "Injection payload must not appear in clause string"
 
-    def test_all_filters_combined(self):
-        result = _build_insight_filter("Atlanta", "Office", "2026-01-01", "2026-12-31")
-        assert "atlanta" in result.lower() or "market" in result.lower()
-        assert "office" in result.lower() or "asset" in result.lower()
-        assert "2026-01-01" in result
-        assert "2026-12-31" in result
+    def test_date_from_uses_named_param(self):
+        clause, params = _build_insight_filter(None, None, "2026-01-01", None)
+        assert "filter_date_from" in params
+        assert params["filter_date_from"] == "2026-01-01"
+        assert "2026-01-01" not in clause
+
+    def test_date_to_uses_named_param(self):
+        clause, params = _build_insight_filter(None, None, None, "2026-12-31")
+        assert "filter_date_to" in params
+        assert params["filter_date_to"] == "2026-12-31"
+
+    def test_all_filters_combined_returns_four_params(self):
+        clause, params = _build_insight_filter("Atlanta", "Office", "2026-01-01", "2026-12-31")
+        assert len(params) == 4
+        assert "$filter_market" in clause
+        assert "$filter_asset_class" in clause
+        assert "$filter_date_from" in clause
+        assert "$filter_date_to" in clause
+
+
+class TestNonInsightLabelNoKeyError:
+    """B-P2-2: Broker/Property/Tenant templates have no {filter_clause} placeholder."""
+
+    def test_broker_template_has_no_filter_clause_placeholder(self):
+        """Confirm the template is used directly without .format()."""
+        tmpl = _LABEL_CONFIG["Broker"]["list_query_template"]
+        assert "{filter_clause}" not in tmpl
+
+    def test_property_template_has_no_filter_clause_placeholder(self):
+        tmpl = _LABEL_CONFIG["Property"]["list_query_template"]
+        assert "{filter_clause}" not in tmpl
+
+    def test_tenant_template_has_no_filter_clause_placeholder(self):
+        tmpl = _LABEL_CONFIG["Tenant"]["list_query_template"]
+        assert "{filter_clause}" not in tmpl
+
+    @pytest.mark.asyncio
+    async def test_broker_query_text_returns_degraded_not_key_error(self):
+        """
+        B-P2-2 + M-P2-1: query_text + label=Broker must return DEGRADED,
+        not raise KeyError from .format(filter_clause='').
+        """
+        driver = MagicMock()
+        result = await run_semantic_search(
+            driver,
+            label="Broker",
+            query_text="senior industrial broker",
+        )
+        assert result["status"] == "DEGRADED"
+        assert "not yet supported" in result["error"]
+        assert result["results"] == []
+
+    @pytest.mark.asyncio
+    async def test_property_query_text_returns_degraded(self):
+        driver = MagicMock()
+        result = await run_semantic_search(
+            driver,
+            label="Property",
+            query_text="logistics warehouse",
+        )
+        assert result["status"] == "DEGRADED"
+
+    @pytest.mark.asyncio
+    async def test_tenant_query_text_returns_degraded(self):
+        driver = MagicMock()
+        result = await run_semantic_search(
+            driver,
+            label="Tenant",
+            query_text="e-commerce tenant",
+        )
+        assert result["status"] == "DEGRADED"
 
 
 # ---------------------------------------------------------------------------
@@ -289,6 +362,7 @@ class TestRunSemanticSearch:
 
     @pytest.mark.asyncio
     async def test_empty_insight_nodes_returns_degraded(self):
+        """M-P2-5: empty Insight candidates must be DEGRADED per api-contracts §3."""
         driver = _make_driver_with_candidates([])
         with patch("mcp_server.tools.semantic_search._embed_query", return_value=[0.1] * 384):
             result = await run_semantic_search(
@@ -296,8 +370,9 @@ class TestRunSemanticSearch:
                 label="Insight",
                 query_text="test query",
             )
-        # No candidates → DEGRADED or OK with empty results
+        assert result["status"] == "DEGRADED"
         assert result["results"] == []
+        assert "No Insight nodes" in result["error"]
 
     @pytest.mark.asyncio
     async def test_result_includes_body_snippet_for_insight(self):

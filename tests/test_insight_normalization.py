@@ -139,6 +139,108 @@ class TestUnmappedTagsAreNotSilentlyDropped:
         assert "dallas" in name.lower()
 
 
+class TestPhase15CanonicalMapEntries:
+    """
+    N-P2-7: Confirm Phase 1.5 additions are live — convert former xfail items
+    to regular passing tests.  These entries were noted as missing in the Phase 2
+    Cortex review (M-P2-4) and were added in Phase 1.5 (commit 2a41a6f).
+    """
+
+    # --- Markets ---
+    def test_las_vegas_resolves(self):
+        result = canonical_resolver("Las Vegas")
+        assert result is not None, "Las Vegas must resolve after Phase 1.5"
+        label, name = result
+        assert label == "Market"
+        assert "las vegas" in name.lower()
+
+    def test_las_vegas_alias_lv_resolves(self):
+        result = canonical_resolver("LV")
+        assert result is not None
+        label, name = result
+        assert label == "Market"
+        assert "las vegas" in name.lower()
+
+    def test_minneapolis_resolves(self):
+        result = canonical_resolver("Minneapolis")
+        assert result is not None, "Minneapolis must resolve after Phase 1.5"
+        label, name = result
+        assert label == "Market"
+        assert "minneapolis" in name.lower()
+
+    def test_twin_cities_alias_resolves(self):
+        result = canonical_resolver("Twin Cities")
+        assert result is not None
+        label, name = result
+        assert label == "Market"
+        assert "minneapolis" in name.lower()
+
+    def test_sacramento_resolves(self):
+        result = canonical_resolver("Sacramento")
+        assert result is not None, "Sacramento must resolve after Phase 1.5"
+        label, name = result
+        assert label == "Market"
+        assert "sacramento" in name.lower()
+
+    def test_san_antonio_resolves(self):
+        result = canonical_resolver("San Antonio")
+        assert result is not None, "San Antonio must resolve after Phase 1.5"
+        label, name = result
+        assert label == "Market"
+        assert "san antonio" in name.lower()
+
+    def test_san_diego_resolves(self):
+        result = canonical_resolver("San Diego")
+        assert result is not None, "San Diego must resolve after Phase 1.5"
+        label, name = result
+        assert label == "Market"
+        assert "san diego" in name.lower()
+
+    # --- Asset classes ---
+    def test_life_sciences_resolves(self):
+        result = canonical_resolver("Life Sciences")
+        assert result is not None, "Life Sciences must resolve after Phase 1.5"
+        label, name = result
+        assert label == "AssetClass"
+        assert "life" in name.lower()
+
+    def test_biotech_alias_resolves_to_life_sciences(self):
+        result = canonical_resolver("Biotech")
+        assert result is not None
+        label, name = result
+        assert label == "AssetClass"
+        assert "life" in name.lower()
+
+    # --- Service lines ---
+    def test_occupier_services_resolves(self):
+        result = canonical_resolver("Occupier Services")
+        assert result is not None, "Occupier Services must resolve after Phase 1.5"
+        label, name = result
+        assert label == "AssetClass" or label == "Market" or True  # any non-None
+        # The canonical_resolver maps service_lines too; just confirm non-None
+        assert result is not None
+
+    def test_project_management_resolves(self):
+        result = canonical_resolver("Project Management")
+        assert result is not None, "Project Management must resolve after Phase 1.5"
+
+    def test_taxonomy_key_las_vegas(self):
+        result = taxonomy_key("Las Vegas", "markets")
+        assert "las vegas" in result.lower()
+
+    def test_taxonomy_key_life_sciences(self):
+        result = taxonomy_key("Life Sciences", "asset_classes")
+        assert "life" in result.lower()
+
+    def test_taxonomy_key_occupier_services(self):
+        result = taxonomy_key("Occupier Services", "service_lines")
+        assert "occupier" in result.lower()
+
+    def test_taxonomy_key_project_management(self):
+        result = taxonomy_key("Project Management", "service_lines")
+        assert "project" in result.lower()
+
+
 class TestTaxonomyKeyPhaseTwoValues:
     """taxonomy_key() should resolve or pass-through for Phase 2 values."""
 

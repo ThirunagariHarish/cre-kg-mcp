@@ -21,6 +21,7 @@ import snowflake.connector
 import structlog
 from dotenv import load_dotenv
 
+from ingester.embedding import encode as _embedding_encode
 from ingester.graph_writer import get_driver, bootstrap_schema
 from ingester.normalizer import canonical_resolver
 from ingester.snowflake_client import get_connection
@@ -33,27 +34,13 @@ INGEST_POLL_SECONDS: int = int(os.environ.get("INGEST_POLL_SECONDS", 60))
 
 
 # ---------------------------------------------------------------------------
-# Embedding helper (lazy-loaded so tests can import without model download)
+# Embedding helper — delegates to shared ingester.embedding module (N-P2-1)
 # ---------------------------------------------------------------------------
-
-_model = None
-
-
-def _get_model():
-    global _model
-    if _model is None:
-        from sentence_transformers import SentenceTransformer  # type: ignore
-        log.info("embedding_model_loading", model="all-MiniLM-L6-v2")
-        _model = SentenceTransformer("all-MiniLM-L6-v2")
-        log.info("embedding_model_loaded")
-    return _model
 
 
 def embed_text(text: str) -> list[float]:
     """Return a 384-dim embedding for the given text (CPU-friendly)."""
-    model = _get_model()
-    vec = model.encode(text, normalize_embeddings=True)
-    return vec.tolist()
+    return _embedding_encode(text)
 
 
 # ---------------------------------------------------------------------------
@@ -75,6 +62,16 @@ MARK_PROCESSED_SQL = """
 UPDATE HACKATHON.PUBLIC.CRE_INSIGHTS_DELTA
 SET PROCESSED = TRUE
 WHERE INSIGHT_ID = %s
+  AND PROCESSED = FALSE
+"""
+
+# M-P2-2: bulk-insert backfilled IDs into the delta table so the poll loop
+# skips them.  The VALUES rows are built at runtime; the SQL template itself
+# intentionally has no VALUES clause — it is appended in bulk_mark_backfilled.
+_BACKFILL_MARK_PROCESSED_PREFIX = """
+INSERT INTO HACKATHON.PUBLIC.CRE_INSIGHTS_DELTA
+  (INSIGHT_ID, PROCESSED, DELTA_CREATED_AT)
+VALUES
 """
 
 
@@ -87,6 +84,24 @@ def fetch_unprocessed(conn: snowflake.connector.SnowflakeConnection) -> list[dic
 def mark_processed(conn: snowflake.connector.SnowflakeConnection, insight_id: str) -> None:
     with conn.cursor() as cur:
         cur.execute(MARK_PROCESSED_SQL, (insight_id,))
+
+
+def bulk_mark_backfilled(
+    conn: snowflake.connector.SnowflakeConnection,
+    insight_ids: list[str],
+) -> None:
+    """
+    M-P2-2: Bulk-insert all backfilled INSIGHT_IDs into CRE_INSIGHTS_DELTA
+    with PROCESSED=TRUE so the poll loop's WHERE PROCESSED=FALSE clause skips
+    them.  Uses a single multi-VALUES INSERT — not one row per round-trip.
+    """
+    if not insight_ids:
+        return
+    # Build (%s, TRUE, CURRENT_TIMESTAMP()) rows for a single INSERT
+    placeholders = ", ".join("(%s, TRUE, CURRENT_TIMESTAMP())" for _ in insight_ids)
+    sql = _BACKFILL_MARK_PROCESSED_PREFIX + placeholders
+    with conn.cursor() as cur:
+        cur.execute(sql, insight_ids)
 
 
 # ---------------------------------------------------------------------------
@@ -183,16 +198,25 @@ ABOUT_TAG_CYPHER_MAP = {
 # ---------------------------------------------------------------------------
 
 def _parse_raw_tags(raw_tags_val: Any) -> list[str]:
-    """Parse raw_tags field from Snowflake (may be JSON string, list, or None)."""
+    """Parse raw_tags field from Snowflake (may be JSON string, list, dict, or None)."""
     if raw_tags_val is None:
         return []
     if isinstance(raw_tags_val, list):
         return [str(t) for t in raw_tags_val]
+    # N-P2-5: Snowflake VARIANT can return a dict when the stored JSON is an
+    # object rather than an array (malformed producer data).  Log and skip
+    # rather than coercing with str() which produces unparseable tag keys.
+    if isinstance(raw_tags_val, dict):
+        log.warning("raw_tags_is_dict_not_list", keys=list(raw_tags_val.keys())[:10])
+        return []
     if isinstance(raw_tags_val, str):
         try:
             parsed = json.loads(raw_tags_val)
             if isinstance(parsed, list):
                 return [str(t) for t in parsed]
+            if isinstance(parsed, dict):
+                log.warning("raw_tags_json_is_dict_not_list", keys=list(parsed.keys())[:10])
+                return []
         except (json.JSONDecodeError, ValueError):
             pass
         # Comma-separated fallback
@@ -373,16 +397,32 @@ def backfill_from_source(sf_conn, neo4j_driver) -> int:
     log.info("backfill_new_rows", count=len(new_rows))
 
     count = 0
+    backfilled_ids: list[str] = []
     for row in new_rows:
         insight_id = str(row["INSIGHT_ID"]).strip()
         body = (row.get("BODY") or row.get("TITLE") or insight_id)
         try:
             emb = embed_text(body)
             upsert_insight(neo4j_driver, row, emb)
+            backfilled_ids.append(insight_id)
             count += 1
             log.info("backfill_insight_upserted", insight_id=insight_id)
         except Exception as exc:
             log.error("backfill_insight_failed", insight_id=insight_id, error=str(exc))
+
+    # M-P2-2: mark all successfully backfilled rows as processed in the delta
+    # table using a single multi-VALUES INSERT so the poll loop's
+    # WHERE PROCESSED = FALSE clause skips them on future cycles.
+    if backfilled_ids:
+        try:
+            bulk_mark_backfilled(sf_conn, backfilled_ids)
+            log.info("backfill_marked_processed", count=len(backfilled_ids))
+        except Exception as exc:
+            log.warning(
+                "backfill_mark_processed_failed",
+                error=str(exc),
+                count=len(backfilled_ids),
+            )
 
     return count
 
