@@ -26,7 +26,9 @@ Reserved module paths (do NOT create files here in Phase 1):
 from __future__ import annotations
 
 import importlib
+import logging
 import pkgutil
+import sys
 from typing import Callable
 
 import structlog
@@ -37,6 +39,18 @@ from mcp_server.neo4j_client import get_driver
 import mcp_server.tools as _tools_pkg
 
 load_dotenv()
+
+# MCP stdio transport requires stdout to be reserved for JSON-RPC ONLY.
+# Route structlog + stdlib logging to stderr so log lines never corrupt the protocol stream.
+logging.basicConfig(stream=sys.stderr, level=logging.INFO, force=True)
+structlog.configure(
+    processors=[
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.add_log_level,
+        structlog.dev.ConsoleRenderer(colors=False),
+    ],
+    logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
+)
 
 log = structlog.get_logger()
 
