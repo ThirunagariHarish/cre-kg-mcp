@@ -181,6 +181,86 @@
 				},
 				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
 			}
+		},
+		{
+			"name": "10. Broker neighborhood — 1 hop (full picture, no truncation)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json, text/event-stream" },
+					{ "key": "mcp-session-id", "value": "{{session_id}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 9,\n  \"params\": {\n    \"name\": \"traverse_graph\",\n    \"arguments\": {\n      \"_comment\": \"Returns the broker's direct neighbors: Markets COVERED, AssetClasses SPECIALIZED_IN, Firm BELONGS_TO, Leases BROKERED_BY, Clients SPOC_FOR. Try other broker emails from the broker_key index in Neo4j.\",\n      \"start_node_id\": \"email::stephanie.bell@cbre.com\",\n      \"max_hops\": 1\n    }\n  }\n}"
+				},
+				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+			}
+		},
+		{
+			"name": "11. Broker neighborhood — 2 hops, filtered (deeper but bounded)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json, text/event-stream" },
+					{ "key": "mcp-session-id", "value": "{{session_id}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 10,\n  \"params\": {\n    \"name\": \"traverse_graph\",\n    \"arguments\": {\n      \"_comment\": \"At 2 hops, AssetClass and Market connect to thousands of other Properties/Brokers and the 200-node cap hits. Use target_labels to keep only the dimensions you care about.\",\n      \"start_node_id\": \"email::stephanie.bell@cbre.com\",\n      \"max_hops\": 2,\n      \"target_labels\": [\"Lease\", \"Property\", \"Tenant\", \"Client\", \"Pursuit\", \"Insight\"]\n    }\n  }\n}"
+				},
+				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+			}
+		},
+		{
+			"name": "12. Client/Tenant neighborhood — 1 hop",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json, text/event-stream" },
+					{ "key": "mcp-session-id", "value": "{{session_id}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 11,\n  \"params\": {\n    \"name\": \"traverse_graph\",\n    \"arguments\": {\n      \"_comment\": \"For tenants with many leases (Microsoft, Amazon, Apple), 1 hop already hits the cap because TENANT_IS fans out across all leases. Use target_labels to focus.\",\n      \"start_node_id\": \"name::microsoft\",\n      \"max_hops\": 1,\n      \"target_labels\": [\"Insight\", \"Pursuit\", \"Client\", \"Broker\"]\n    }\n  }\n}"
+				},
+				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+			}
+		},
+		{
+			"name": "13. Client/Tenant — pursuits + brokers via 2 hops (relationship-filtered)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json, text/event-stream" },
+					{ "key": "mcp-session-id", "value": "{{session_id}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 12,\n  \"params\": {\n    \"name\": \"traverse_graph\",\n    \"arguments\": {\n      \"_comment\": \"Walk Pursuits + SPOCs that touch this client, plus the brokers assigned to them. Skip TENANT_IS so leases don't dominate.\",\n      \"start_node_id\": \"name::microsoft\",\n      \"max_hops\": 2,\n      \"relationship_types\": [\"FOR\", \"SPOC_FOR\", \"ASSIGNED_TO\", \"ABOUT\", \"BELONGS_TO\"]\n    }\n  }\n}"
+				},
+				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+			}
+		},
+		{
+			"name": "14. predict_links — broker's predicted affinities",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json, text/event-stream" },
+					{ "key": "mcp-session-id", "value": "{{session_id}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 13,\n  \"params\": {\n    \"name\": \"predict_links\",\n    \"arguments\": {\n      \"node_id\": \"email::stephanie.bell@cbre.com\",\n      \"k\": 10\n    }\n  }\n}"
+				},
+				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+			}
 		}
 	]
 }
