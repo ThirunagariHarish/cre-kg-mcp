@@ -1,266 +1,449 @@
 {
 	"info": {
 		"name": "CRE KG MCP Server",
-		"description": "Test the remote CRE Knowledge Graph MCP server.\n\n## Setup\n1. Import this collection into Postman.\n2. The collection variable `base_url` defaults to the current public Cloudflare Tunnel URL — change if it has rotated.\n3. Run the requests **in order** (1 → 2 → 3 → ...). Request 1 (Initialize) extracts `mcp-session-id` from the response header into a collection variable; every subsequent request reuses it.\n\nMCP Streamable HTTP transport: every request is `POST /mcp` with `Accept: application/json, text/event-stream`. Responses arrive as Server-Sent Events.",
+		"description": "Test the remote CRE Knowledge Graph MCP server.\n\n## Setup\n1. Import this collection into Postman.\n2. The collection variable `base_url` defaults to the current public Cloudflare Tunnel URL — change if it has rotated.\n3. Run requests **1 → 2** first (Initialize captures `mcp-session-id` into a collection variable; Initialized notification activates the session).\n4. After that, run any other request in any order. Every subsequent request reuses the captured session id.\n\n## Folders\n- **0. Protocol setup** — initialize handshake; run first.\n- **1. Diagnostics** — health_check, tools/list.\n- **2. Direct tool calls** — one request per MCP tool, isolated.\n- **3. Workflow: New Insight → Action** — the 4-step agent loop showing what to call when a new insight arrives (this answers the \"what should I do with a new market signal\" use case).\n- **4. Graph exploration** — traverse_graph patterns for arbitrary brokers / clients / tenants.\n\nMCP transport: Streamable HTTP. Every request is `POST /mcp` with `Accept: application/json, text/event-stream`. Responses are Server-Sent Events.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
 		{
 			"key": "base_url",
 			"value": "https://lounge-instances-lanka-compression.trycloudflare.com/mcp",
-			"description": "Update this if the Cloudflare Tunnel URL rotated."
+			"description": "Update if Cloudflare Tunnel URL rotated."
 		},
 		{
 			"key": "session_id",
 			"value": "",
-			"description": "Auto-populated by the Initialize request. Don't edit manually."
+			"description": "Auto-populated by Initialize request."
+		},
+		{
+			"key": "demo_insight_id",
+			"value": "INS-20260319-001",
+			"description": "Microsoft Boston Office expansion — used in the workflow folder."
+		},
+		{
+			"key": "demo_broker_email",
+			"value": "stephanie.bell@cbre.com",
+			"description": "Reference broker for graph exploration examples."
+		},
+		{
+			"key": "demo_client_name",
+			"value": "nvidia",
+			"description": "Reference client for graph exploration. nvidia/adobe/stripe/pfizer/kpmg all have 300+ SPOC team members."
 		}
 	],
 	"item": [
 		{
-			"name": "1. Initialize (run first)",
-			"event": [
+			"name": "0. Protocol setup",
+			"item": [
 				{
-					"listen": "test",
-					"script": {
-						"type": "text/javascript",
-						"exec": [
-							"// Auto-capture mcp-session-id from response header into collection variable.",
-							"const sid = pm.response.headers.get('mcp-session-id') || pm.response.headers.get('Mcp-Session-Id');",
-							"if (sid) {",
-							"    pm.collectionVariables.set('session_id', sid);",
-							"    console.log('Captured session_id:', sid);",
-							"} else {",
-							"    console.warn('No mcp-session-id header in response. Check the server.');",
-							"}",
-							"",
-							"pm.test('Status 200', function () { pm.response.to.have.status(200); });",
-							"pm.test('Got session id', function () { pm.expect(sid).to.be.a('string').and.not.empty; });"
-						]
+					"name": "1. Initialize (run first)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const sid = pm.response.headers.get('mcp-session-id') || pm.response.headers.get('Mcp-Session-Id');",
+									"if (sid) {",
+									"    pm.collectionVariables.set('session_id', sid);",
+									"    console.log('Captured session_id:', sid);",
+									"} else {",
+									"    console.warn('No mcp-session-id header in response.');",
+									"}",
+									"pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+									"pm.test('Got session id', function () { pm.expect(sid).to.be.a('string').and.not.empty; });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"initialize\",\n  \"id\": 1,\n  \"params\": {\n    \"protocolVersion\": \"2024-11-05\",\n    \"capabilities\": {},\n    \"clientInfo\": { \"name\": \"postman\", \"version\": \"1.0\" }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
+				},
+				{
+					"name": "2. Initialized notification (run second)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"notifications/initialized\"\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
 					}
 				}
-			],
-			"request": {
-				"method": "POST",
-				"header": [
-					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json, text/event-stream" }
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"initialize\",\n  \"id\": 1,\n  \"params\": {\n    \"protocolVersion\": \"2024-11-05\",\n    \"capabilities\": {},\n    \"clientInfo\": { \"name\": \"postman\", \"version\": \"1.0\" }\n  }\n}"
-				},
-				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
-			}
+			]
 		},
 		{
-			"name": "2. Initialized notification",
-			"request": {
-				"method": "POST",
-				"header": [
-					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json, text/event-stream" },
-					{ "key": "mcp-session-id", "value": "{{session_id}}" }
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"notifications/initialized\"\n}"
+			"name": "1. Diagnostics",
+			"item": [
+				{
+					"name": "tools/list",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/list\",\n  \"id\": 100\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
 				},
-				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
-			},
-			"response": []
+				{
+					"name": "health_check",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 101,\n  \"params\": {\n    \"name\": \"health_check\",\n    \"arguments\": {}\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
+				}
+			]
 		},
 		{
-			"name": "3. tools/list",
-			"request": {
-				"method": "POST",
-				"header": [
-					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json, text/event-stream" },
-					{ "key": "mcp-session-id", "value": "{{session_id}}" }
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/list\",\n  \"id\": 2\n}"
+			"name": "2. Direct tool calls",
+			"item": [
+				{
+					"name": "find_matching_properties_for_insight (Q1)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 201,\n  \"params\": {\n    \"name\": \"find_matching_properties_for_insight\",\n    \"arguments\": {\n      \"insight_id\": \"{{demo_insight_id}}\"\n    }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
 				},
-				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
-			}
+				{
+					"name": "suggest_next_best_actions_for_deal (Q2)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 202,\n  \"params\": {\n    \"name\": \"suggest_next_best_actions_for_deal\",\n    \"arguments\": {\n      \"pursuit_id\": \"PUR-0000001\"\n    }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
+				},
+				{
+					"name": "recommend_broker_for_deal (Q3)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 203,\n  \"params\": {\n    \"name\": \"recommend_broker_for_deal\",\n    \"arguments\": {\n      \"market\": \"manhattan\",\n      \"asset_class\": \"office\",\n      \"service_line\": \"leasing\"\n    }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
+				},
+				{
+					"name": "semantic_search",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 204,\n  \"params\": {\n    \"name\": \"semantic_search\",\n    \"arguments\": {\n      \"label\": \"Insight\",\n      \"query_text\": \"sublease pressure in Atlanta\",\n      \"top_k\": 5\n    }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
+				},
+				{
+					"name": "list_communities",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 205,\n  \"params\": {\n    \"name\": \"list_communities\",\n    \"arguments\": { \"top_n\": 5 }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
+				},
+				{
+					"name": "predict_links (broker affinity)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 206,\n  \"params\": {\n    \"name\": \"predict_links\",\n    \"arguments\": {\n      \"node_id\": \"email::{{demo_broker_email}}\",\n      \"k\": 10\n    }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
+				}
+			]
 		},
 		{
-			"name": "4. health_check",
-			"request": {
-				"method": "POST",
-				"header": [
-					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json, text/event-stream" },
-					{ "key": "mcp-session-id", "value": "{{session_id}}" }
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 3,\n  \"params\": {\n    \"name\": \"health_check\",\n    \"arguments\": {}\n  }\n}"
+			"name": "3. Workflow: New Insight → Action",
+			"description": "Run these 4 requests in order whenever a new market-research insight arrives. The output of each step informs the next.\n\nThis is the canonical agent loop: a cloud agent reading from this MCP server should chain these calls when an insight notification fires.",
+			"item": [
+				{
+					"name": "Step 1 — Discover insight (semantic search)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Capture the top insight_id into a variable so the next steps can chain off it.",
+									"try {",
+									"    const text = pm.response.text();",
+									"    const dataLine = text.split('\\n').find(l => l.startsWith('data: '));",
+									"    if (dataLine) {",
+									"        const env = JSON.parse(dataLine.substring(6));",
+									"        const inner = JSON.parse(env.result.content[0].text);",
+									"        const top = (inner.results || [])[0];",
+									"        const id = top && top.node && (top.node.id || top.node.insight_id);",
+									"        if (id) {",
+									"            pm.collectionVariables.set('demo_insight_id', id);",
+									"            console.log('Top insight:', id, 'score=' + top.score);",
+									"            console.log('Snippet:', (top.body_snippet || '').substring(0, 100));",
+									"        } else {",
+									"            console.warn('No insight id in top result. Top result:', JSON.stringify(top));",
+									"        }",
+									"    }",
+									"} catch (e) {",
+									"    console.warn('Could not extract insight_id:', e);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 301,\n  \"params\": {\n    \"name\": \"semantic_search\",\n    \"arguments\": {\n      \"_comment\": \"In production, replace query_text with the freshly streamed insight body. The Test script captures the top result into demo_insight_id for steps 2-4. label='Insight' searches the insight vector index.\",\n      \"label\": \"Insight\",\n      \"query_text\": \"Microsoft expanding Boston office footprint\",\n      \"top_k\": 3\n    }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
 				},
-				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
-			}
+				{
+					"name": "Step 2 — Get matching properties + brokers",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Capture the insight's market + asset_class for steps 3 & 4.",
+									"try {",
+									"    const text = pm.response.text();",
+									"    const dataLine = text.split('\\n').find(l => l.startsWith('data: '));",
+									"    if (dataLine) {",
+									"        const env = JSON.parse(dataLine.substring(6));",
+									"        const inner = JSON.parse(env.result.content[0].text);",
+									"        if (inner.insight) {",
+									"            pm.collectionVariables.set('insight_market', inner.insight.market || '');",
+									"            pm.collectionVariables.set('insight_asset_class', inner.insight.asset_class || '');",
+									"            console.log('Insight context: market=' + inner.insight.market + ', asset_class=' + inner.insight.asset_class);",
+									"            console.log('Properties matched:', (inner.properties || []).length);",
+									"            console.log('Brokers matched:', (inner.matching_brokers || []).length);",
+									"        }",
+									"        // Capture top tenant if any (for step 4 SPOC lookup)",
+									"        const tenants = (inner.insight && inner.insight.tenant_name) ? [inner.insight.tenant_name] : [];",
+									"        if (tenants.length) {",
+									"            pm.collectionVariables.set('demo_client_name', tenants[0].toLowerCase());",
+									"            console.log('Insight tenant:', tenants[0]);",
+									"        }",
+									"    }",
+									"} catch (e) {",
+									"    console.warn('Could not extract insight context:', e);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 302,\n  \"params\": {\n    \"name\": \"find_matching_properties_for_insight\",\n    \"arguments\": {\n      \"_comment\": \"Returns properties matching the insight's market+asset_class, plus a ranked broker list. The Test script captures market + asset_class into collection variables for the next 2 steps.\",\n      \"insight_id\": \"{{demo_insight_id}}\"\n    }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
+				},
+				{
+					"name": "Step 3 — Best broker for the deal context",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 303,\n  \"params\": {\n    \"name\": \"recommend_broker_for_deal\",\n    \"arguments\": {\n      \"_comment\": \"Reuses market + asset_class captured from step 2. service_line is hardcoded but you can vary it (leasing, capital_markets, advisory).\",\n      \"market\": \"{{insight_market}}\",\n      \"asset_class\": \"{{insight_asset_class}}\",\n      \"service_line\": \"leasing\"\n    }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
+				},
+				{
+					"name": "Step 4 — Team members (SPOCs) for the related client",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 304,\n  \"params\": {\n    \"name\": \"traverse_graph\",\n    \"arguments\": {\n      \"_comment\": \"Surface the SPOC team members already assigned to this client. start_label='Client' forces the Client node (not Tenant — they often share the same key but only Client carries SPOC_FOR edges). relationship_types limits to SPOC + service-line edges so governance is the only thing returned.\",\n      \"start_node_id\": \"name::{{demo_client_name}}\",\n      \"start_label\": \"Client\",\n      \"max_hops\": 1,\n      \"relationship_types\": [\"SPOC_FOR\", \"HAS_SERVICE_LINE\", \"BELONGS_TO\"]\n    }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
+				}
+			]
 		},
 		{
-			"name": "5. recommend_broker_for_deal (Q3)",
-			"request": {
-				"method": "POST",
-				"header": [
-					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json, text/event-stream" },
-					{ "key": "mcp-session-id", "value": "{{session_id}}" }
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 4,\n  \"params\": {\n    \"name\": \"recommend_broker_for_deal\",\n    \"arguments\": {\n      \"market\": \"manhattan\",\n      \"asset_class\": \"office\",\n      \"service_line\": \"leasing\"\n    }\n  }\n}"
+			"name": "4. Graph exploration",
+			"description": "Use traverse_graph to inspect the full neighborhood of any node. Pattern: start with max_hops=1 (always under the cap), expand to max_hops=2 with target_labels or relationship_types filters when you need depth.",
+			"item": [
+				{
+					"name": "Broker — 1 hop neighborhood (full picture)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 401,\n  \"params\": {\n    \"name\": \"traverse_graph\",\n    \"arguments\": {\n      \"_comment\": \"Returns the broker's direct neighbors: Markets COVERED, AssetClasses SPECIALIZED_IN, Firm BELONGS_TO, Leases BROKERED_BY, Clients SPOC_FOR. ~5-15 nodes; never truncated.\",\n      \"start_node_id\": \"email::{{demo_broker_email}}\",\n      \"max_hops\": 1\n    }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
 				},
-				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
-			}
-		},
-		{
-			"name": "6. find_matching_properties_for_insight (Q1)",
-			"request": {
-				"method": "POST",
-				"header": [
-					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json, text/event-stream" },
-					{ "key": "mcp-session-id", "value": "{{session_id}}" }
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 5,\n  \"params\": {\n    \"name\": \"find_matching_properties_for_insight\",\n    \"arguments\": {\n      \"insight_id\": \"INS-20260319-001\"\n    }\n  }\n}"
+				{
+					"name": "Broker — 2 hops, filtered (deals + clients only)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 402,\n  \"params\": {\n    \"name\": \"traverse_graph\",\n    \"arguments\": {\n      \"_comment\": \"Walk to deals + clients via 2 hops. target_labels keeps the dimensions that matter; without it AssetClass connects to ~5K Properties and the cap hits.\",\n      \"start_node_id\": \"email::{{demo_broker_email}}\",\n      \"max_hops\": 2,\n      \"target_labels\": [\"Lease\", \"Property\", \"Tenant\", \"Client\", \"Pursuit\", \"Insight\"]\n    }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
 				},
-				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
-			}
-		},
-		{
-			"name": "7. suggest_next_best_actions_for_deal (Q2)",
-			"request": {
-				"method": "POST",
-				"header": [
-					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json, text/event-stream" },
-					{ "key": "mcp-session-id", "value": "{{session_id}}" }
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 6,\n  \"params\": {\n    \"name\": \"suggest_next_best_actions_for_deal\",\n    \"arguments\": {\n      \"pursuit_id\": \"PUR-0000001\"\n    }\n  }\n}"
+				{
+					"name": "Client/Tenant — 1 hop, filtered (skip leases)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 403,\n  \"params\": {\n    \"name\": \"traverse_graph\",\n    \"arguments\": {\n      \"_comment\": \"Top tenants (Microsoft, Amazon, Apple) have 350+ leases each — TENANT_IS would dominate. target_labels skips Lease so you see Insights/Pursuits/SPOCs instead.\",\n      \"start_node_id\": \"name::{{demo_client_name}}\",\n      \"max_hops\": 1,\n      \"target_labels\": [\"Insight\", \"Pursuit\", \"Client\", \"Broker\"]\n    }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
 				},
-				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
-			}
-		},
-		{
-			"name": "8. semantic_search",
-			"request": {
-				"method": "POST",
-				"header": [
-					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json, text/event-stream" },
-					{ "key": "mcp-session-id", "value": "{{session_id}}" }
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 7,\n  \"params\": {\n    \"name\": \"semantic_search\",\n    \"arguments\": {\n      \"query\": \"sublease pressure in Atlanta\",\n      \"top_k\": 5\n    }\n  }\n}"
+				{
+					"name": "Client/Tenant — pursuits + SPOCs via 2 hops",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 404,\n  \"params\": {\n    \"name\": \"traverse_graph\",\n    \"arguments\": {\n      \"_comment\": \"Walk pursuits + SPOC team members + parent service lines / firms. relationship_types restricts which edges to follow — TENANT_IS is excluded so leases don't dominate.\",\n      \"start_node_id\": \"name::{{demo_client_name}}\",\n      \"max_hops\": 2,\n      \"relationship_types\": [\"FOR\", \"SPOC_FOR\", \"ASSIGNED_TO\", \"ABOUT\", \"BELONGS_TO\", \"HAS_SERVICE_LINE\"]\n    }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
 				},
-				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
-			}
-		},
-		{
-			"name": "9. list_communities",
-			"request": {
-				"method": "POST",
-				"header": [
-					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json, text/event-stream" },
-					{ "key": "mcp-session-id", "value": "{{session_id}}" }
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 8,\n  \"params\": {\n    \"name\": \"list_communities\",\n    \"arguments\": { \"top_n\": 5 }\n  }\n}"
-				},
-				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
-			}
-		},
-		{
-			"name": "10. Broker neighborhood — 1 hop (full picture, no truncation)",
-			"request": {
-				"method": "POST",
-				"header": [
-					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json, text/event-stream" },
-					{ "key": "mcp-session-id", "value": "{{session_id}}" }
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 9,\n  \"params\": {\n    \"name\": \"traverse_graph\",\n    \"arguments\": {\n      \"_comment\": \"Returns the broker's direct neighbors: Markets COVERED, AssetClasses SPECIALIZED_IN, Firm BELONGS_TO, Leases BROKERED_BY, Clients SPOC_FOR. Try other broker emails from the broker_key index in Neo4j.\",\n      \"start_node_id\": \"email::stephanie.bell@cbre.com\",\n      \"max_hops\": 1\n    }\n  }\n}"
-				},
-				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
-			}
-		},
-		{
-			"name": "11. Broker neighborhood — 2 hops, filtered (deeper but bounded)",
-			"request": {
-				"method": "POST",
-				"header": [
-					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json, text/event-stream" },
-					{ "key": "mcp-session-id", "value": "{{session_id}}" }
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 10,\n  \"params\": {\n    \"name\": \"traverse_graph\",\n    \"arguments\": {\n      \"_comment\": \"At 2 hops, AssetClass and Market connect to thousands of other Properties/Brokers and the 200-node cap hits. Use target_labels to keep only the dimensions you care about.\",\n      \"start_node_id\": \"email::stephanie.bell@cbre.com\",\n      \"max_hops\": 2,\n      \"target_labels\": [\"Lease\", \"Property\", \"Tenant\", \"Client\", \"Pursuit\", \"Insight\"]\n    }\n  }\n}"
-				},
-				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
-			}
-		},
-		{
-			"name": "12. Client/Tenant neighborhood — 1 hop",
-			"request": {
-				"method": "POST",
-				"header": [
-					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json, text/event-stream" },
-					{ "key": "mcp-session-id", "value": "{{session_id}}" }
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 11,\n  \"params\": {\n    \"name\": \"traverse_graph\",\n    \"arguments\": {\n      \"_comment\": \"For tenants with many leases (Microsoft, Amazon, Apple), 1 hop already hits the cap because TENANT_IS fans out across all leases. Use target_labels to focus.\",\n      \"start_node_id\": \"name::microsoft\",\n      \"max_hops\": 1,\n      \"target_labels\": [\"Insight\", \"Pursuit\", \"Client\", \"Broker\"]\n    }\n  }\n}"
-				},
-				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
-			}
-		},
-		{
-			"name": "13. Client/Tenant — pursuits + brokers via 2 hops (relationship-filtered)",
-			"request": {
-				"method": "POST",
-				"header": [
-					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json, text/event-stream" },
-					{ "key": "mcp-session-id", "value": "{{session_id}}" }
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 12,\n  \"params\": {\n    \"name\": \"traverse_graph\",\n    \"arguments\": {\n      \"_comment\": \"Walk Pursuits + SPOCs that touch this client, plus the brokers assigned to them. Skip TENANT_IS so leases don't dominate.\",\n      \"start_node_id\": \"name::microsoft\",\n      \"max_hops\": 2,\n      \"relationship_types\": [\"FOR\", \"SPOC_FOR\", \"ASSIGNED_TO\", \"ABOUT\", \"BELONGS_TO\"]\n    }\n  }\n}"
-				},
-				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
-			}
-		},
-		{
-			"name": "14. predict_links — broker's predicted affinities",
-			"request": {
-				"method": "POST",
-				"header": [
-					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json, text/event-stream" },
-					{ "key": "mcp-session-id", "value": "{{session_id}}" }
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 13,\n  \"params\": {\n    \"name\": \"predict_links\",\n    \"arguments\": {\n      \"node_id\": \"email::stephanie.bell@cbre.com\",\n      \"k\": 10\n    }\n  }\n}"
-				},
-				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
-			}
+				{
+					"name": "Insight — what does the graph know about this signal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Accept", "value": "application/json, text/event-stream" },
+							{ "key": "mcp-session-id", "value": "{{session_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 405,\n  \"params\": {\n    \"name\": \"traverse_graph\",\n    \"arguments\": {\n      \"_comment\": \"Insight ABOUT edges to Market/Submarket/AssetClass/Tenant/Property. 1 hop is sufficient — insights have <10 ABOUT edges each.\",\n      \"start_node_id\": \"{{demo_insight_id}}\",\n      \"max_hops\": 1\n    }\n  }\n}"
+						},
+						"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+					}
+				}
+			]
 		}
 	]
 }
