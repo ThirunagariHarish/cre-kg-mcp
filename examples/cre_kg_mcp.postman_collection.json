@@ -7,7 +7,7 @@
 	"variable": [
 		{
 			"key": "base_url",
-			"value": "https://lounge-instances-lanka-compression.trycloudflare.com/mcp",
+			"value": "https://infrastructure-lips-oakland-incredible.trycloudflare.com/mcp",
 			"description": "Update if Cloudflare Tunnel URL rotated."
 		},
 		{
