@@ -1,0 +1,186 @@
+{
+	"info": {
+		"name": "CRE KG MCP Server",
+		"description": "Test the remote CRE Knowledge Graph MCP server.\n\n## Setup\n1. Import this collection into Postman.\n2. The collection variable `base_url` defaults to the current public Cloudflare Tunnel URL — change if it has rotated.\n3. Run the requests **in order** (1 → 2 → 3 → ...). Request 1 (Initialize) extracts `mcp-session-id` from the response header into a collection variable; every subsequent request reuses it.\n\nMCP Streamable HTTP transport: every request is `POST /mcp` with `Accept: application/json, text/event-stream`. Responses arrive as Server-Sent Events.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://lounge-instances-lanka-compression.trycloudflare.com/mcp",
+			"description": "Update this if the Cloudflare Tunnel URL rotated."
+		},
+		{
+			"key": "session_id",
+			"value": "",
+			"description": "Auto-populated by the Initialize request. Don't edit manually."
+		}
+	],
+	"item": [
+		{
+			"name": "1. Initialize (run first)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// Auto-capture mcp-session-id from response header into collection variable.",
+							"const sid = pm.response.headers.get('mcp-session-id') || pm.response.headers.get('Mcp-Session-Id');",
+							"if (sid) {",
+							"    pm.collectionVariables.set('session_id', sid);",
+							"    console.log('Captured session_id:', sid);",
+							"} else {",
+							"    console.warn('No mcp-session-id header in response. Check the server.');",
+							"}",
+							"",
+							"pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+							"pm.test('Got session id', function () { pm.expect(sid).to.be.a('string').and.not.empty; });"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json, text/event-stream" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"initialize\",\n  \"id\": 1,\n  \"params\": {\n    \"protocolVersion\": \"2024-11-05\",\n    \"capabilities\": {},\n    \"clientInfo\": { \"name\": \"postman\", \"version\": \"1.0\" }\n  }\n}"
+				},
+				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+			}
+		},
+		{
+			"name": "2. Initialized notification",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json, text/event-stream" },
+					{ "key": "mcp-session-id", "value": "{{session_id}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"notifications/initialized\"\n}"
+				},
+				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+			},
+			"response": []
+		},
+		{
+			"name": "3. tools/list",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json, text/event-stream" },
+					{ "key": "mcp-session-id", "value": "{{session_id}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/list\",\n  \"id\": 2\n}"
+				},
+				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+			}
+		},
+		{
+			"name": "4. health_check",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json, text/event-stream" },
+					{ "key": "mcp-session-id", "value": "{{session_id}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 3,\n  \"params\": {\n    \"name\": \"health_check\",\n    \"arguments\": {}\n  }\n}"
+				},
+				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+			}
+		},
+		{
+			"name": "5. recommend_broker_for_deal (Q3)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json, text/event-stream" },
+					{ "key": "mcp-session-id", "value": "{{session_id}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 4,\n  \"params\": {\n    \"name\": \"recommend_broker_for_deal\",\n    \"arguments\": {\n      \"market\": \"manhattan\",\n      \"asset_class\": \"office\",\n      \"service_line\": \"leasing\"\n    }\n  }\n}"
+				},
+				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+			}
+		},
+		{
+			"name": "6. find_matching_properties_for_insight (Q1)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json, text/event-stream" },
+					{ "key": "mcp-session-id", "value": "{{session_id}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 5,\n  \"params\": {\n    \"name\": \"find_matching_properties_for_insight\",\n    \"arguments\": {\n      \"insight_id\": \"INS-20260319-001\"\n    }\n  }\n}"
+				},
+				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+			}
+		},
+		{
+			"name": "7. suggest_next_best_actions_for_deal (Q2)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json, text/event-stream" },
+					{ "key": "mcp-session-id", "value": "{{session_id}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 6,\n  \"params\": {\n    \"name\": \"suggest_next_best_actions_for_deal\",\n    \"arguments\": {\n      \"pursuit_id\": \"PUR-0000001\"\n    }\n  }\n}"
+				},
+				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+			}
+		},
+		{
+			"name": "8. semantic_search",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json, text/event-stream" },
+					{ "key": "mcp-session-id", "value": "{{session_id}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 7,\n  \"params\": {\n    \"name\": \"semantic_search\",\n    \"arguments\": {\n      \"query\": \"sublease pressure in Atlanta\",\n      \"top_k\": 5\n    }\n  }\n}"
+				},
+				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+			}
+		},
+		{
+			"name": "9. list_communities",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json, text/event-stream" },
+					{ "key": "mcp-session-id", "value": "{{session_id}}" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"tools/call\",\n  \"id\": 8,\n  \"params\": {\n    \"name\": \"list_communities\",\n    \"arguments\": { \"top_n\": 5 }\n  }\n}"
+				},
+				"url": { "raw": "{{base_url}}", "host": ["{{base_url}}"] }
+			}
+		}
+	]
+}
