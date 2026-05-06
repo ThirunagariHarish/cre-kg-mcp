@@ -1,32 +1,24 @@
 """
-CRE Knowledge Graph MCP Server — stdio transport.
+CRE Knowledge Graph MCP Server — stdio + streamable-http transport.
 
 Tool registration order follows api-contracts.md §11.
 Each tool lives in its own module under mcp_server/tools/ and must expose a
 `register(mcp_server, driver_factory)` function.
 
-M7: Tools are discovered automatically via pkgutil.iter_modules so that
-    Phase 3 can add list_communities, predict_links, traverse_graph by
-    dropping module files — no editing of this file required and no
-    merge-collision risk across parallel branches.
+Transport selection via `MCP_TRANSPORT` env var:
+  - "stdio" (default) — Claude Desktop / local MCP clients
+  - "streamable-http" — remote agents over HTTPS (requires MCP_AUTH_TOKEN)
 
-Registration order is controlled by the ORDER list below.  Modules found by
-auto-discovery that are NOT in ORDER are appended alphabetically after the
-ordered set (safe default for new phases).
-
-Reserved module paths (do NOT create files here in Phase 1):
-  mcp_server/tools/semantic_search.py      — Phase 2 (already present)
-  mcp_server/tools/traverse_graph.py       — Phase 3
-  mcp_server/tools/list_communities.py     — Phase 3
-  mcp_server/tools/predict_links.py        — Phase 3
-  ingester/                                — Phase 2 streaming additions
-  ml/                                      — Phase 3 ML enrichment
+In streamable-http mode, `cypher_query` is hidden from the registered tool
+surface unless MCP_REMOTE_ALLOW_CYPHER=1 (Cypher-injection blast radius is too
+large to expose to internet callers by default).
 """
 
 from __future__ import annotations
 
 import importlib
 import logging
+import os
 import pkgutil
 import sys
 from typing import Callable
@@ -39,6 +31,8 @@ from mcp_server.neo4j_client import get_driver
 import mcp_server.tools as _tools_pkg
 
 load_dotenv()
+
+_TRANSPORT = os.getenv("MCP_TRANSPORT", "stdio").lower()
 
 # MCP stdio transport requires stdout to be reserved for JSON-RPC ONLY.
 # Route structlog + stdlib logging to stderr so log lines never corrupt the protocol stream.
@@ -54,6 +48,9 @@ structlog.configure(
 
 log = structlog.get_logger()
 
+_HOST = os.getenv("MCP_HOST", "127.0.0.1")
+_PORT = int(os.getenv("MCP_PORT", "8080"))
+
 mcp = FastMCP(
     name="cre-kg-mcp",
     instructions=(
@@ -62,7 +59,15 @@ mcp = FastMCP(
         "Use the CRE-specific tools to answer questions about brokers, properties, "
         "leases, pursuits, and market insights grounded in real deal data."
     ),
+    host=_HOST,
+    port=_PORT,
 )
+
+# In remote (tunneled) mode the Host header arrives as the Cloudflare hostname,
+# which the default DNS-rebinding protection would reject. Disable that check
+# since the tunnel itself acts as the trust boundary.
+if _TRANSPORT == "streamable-http":
+    mcp.settings.transport_security.enable_dns_rebinding_protection = False
 
 # api-contracts.md §11 registration order.
 # Modules present on disk but absent from this list are appended alphabetically.
@@ -83,12 +88,18 @@ def _discover_tool_modules() -> list[str]:
     """
     Return module base-names found under mcp_server/tools/, ordered per
     _TOOL_ORDER with unknowns appended alphabetically.
+
+    In streamable-http (remote) mode, `cypher_query` is hidden by default —
+    arbitrary Cypher over the public internet is too broad an attack surface.
+    Set MCP_REMOTE_ALLOW_CYPHER=1 to override.
     """
     found = {
         mod.name
         for mod in pkgutil.iter_modules(_tools_pkg.__path__)
         if not mod.name.startswith("_")
     }
+    if _TRANSPORT == "streamable-http" and os.getenv("MCP_REMOTE_ALLOW_CYPHER") != "1":
+        found.discard("cypher_query")
     ordered = [name for name in _TOOL_ORDER if name in found]
     extras = sorted(found - set(_TOOL_ORDER))
     return ordered + extras
@@ -122,9 +133,25 @@ def register_all_tools() -> None:
 
 
 def main() -> None:
-    log.info("mcp_server_starting", transport="stdio")
+    log.info(
+        "mcp_server_starting",
+        transport=_TRANSPORT,
+        host=_HOST if _TRANSPORT != "stdio" else None,
+        port=_PORT if _TRANSPORT != "stdio" else None,
+    )
     register_all_tools()
-    mcp.run(transport="stdio")
+    if _TRANSPORT == "streamable-http":
+        log.info(
+            "remote_mode_active",
+            tool_count=len(_discover_tool_modules()),
+            cypher_query_exposed=os.getenv("MCP_REMOTE_ALLOW_CYPHER") == "1",
+            endpoint=f"http://{_HOST}:{_PORT}/mcp",
+        )
+        mcp.run(transport="streamable-http")
+    elif _TRANSPORT == "sse":
+        mcp.run(transport="sse")
+    else:
+        mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":
