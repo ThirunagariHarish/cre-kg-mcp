@@ -83,13 +83,24 @@ async def lifespan(app: FastAPI):
         bootstrap_servers=settings.kafka_bootstrap_servers,
         client_id="trading-terminal-api",
     )
+    _kafka_host, _kafka_port_str = settings.kafka_bootstrap_servers.split(":") if ":" in settings.kafka_bootstrap_servers else (settings.kafka_bootstrap_servers, "9092")
+    _kafka_reachable = False
     try:
-        await kafka_publisher.start()
-        await create_topics(settings.kafka_bootstrap_servers)
-        set_kafka_publisher(kafka_publisher)
-        logger.info("Kafka publisher ready")
-    except Exception as exc:
-        logger.warning("Kafka unavailable (non-fatal): %s", exc)
+        import socket as _socket
+        with _socket.create_connection((_kafka_host, int(_kafka_port_str)), timeout=1.0):
+            _kafka_reachable = True
+    except OSError:
+        pass
+    if _kafka_reachable:
+        try:
+            await kafka_publisher.start()
+            await create_topics(settings.kafka_bootstrap_servers)
+            set_kafka_publisher(kafka_publisher)
+            logger.info("Kafka publisher ready")
+        except Exception as exc:
+            logger.warning("Kafka unavailable (non-fatal): %s", exc)
+    else:
+        logger.warning("Kafka not reachable at %s — skipping (non-fatal)", settings.kafka_bootstrap_servers)
 
     # ── Paper Broker ──
     paper_broker = PaperBroker(

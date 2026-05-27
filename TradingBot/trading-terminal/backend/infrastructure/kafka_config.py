@@ -132,7 +132,7 @@ async def create_topics(bootstrap_servers: str) -> None:
         results = admin.create_topics(new_topics)
         for topic, future in results.items():
             try:
-                future.result()
+                future.result(timeout=5)  # don't block forever if Kafka is down
                 logger.info("Kafka topic created: %s", topic)
             except Exception as exc:
                 if "already exists" in str(exc).lower() or "topic_already_exists" in str(exc).lower():

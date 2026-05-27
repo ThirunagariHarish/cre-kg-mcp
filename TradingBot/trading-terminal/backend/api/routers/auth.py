@@ -4,15 +4,20 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+import bcrypt as _bcrypt
 from jose import jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel
 
 from ...core.config import get_settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def _verify_password(plain: str, hashed: str) -> bool:
+    try:
+        return _bcrypt.checkpw(plain.encode(), hashed.encode())
+    except Exception:
+        return False
 
 
 class Token(BaseModel):
@@ -34,7 +39,7 @@ async def login(form: OAuth2PasswordRequestForm = Depends()) -> Token:
             detail="Auth not configured — set DASHBOARD_PASSWORD_HASH via Doppler",
         )
 
-    if not _pwd_context.verify(form.password, settings.dashboard_password_hash):
+    if not _verify_password(form.password, settings.dashboard_password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expire_minutes)

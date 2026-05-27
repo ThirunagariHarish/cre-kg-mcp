@@ -36,9 +36,6 @@ dependencies = [
     # ── Discord ──
     "discord.py>=2.3.0",
 
-    # ── Broker ──
-    "alpaca-trade-api>=3.3.0",
-
     # ── Market Data ──
     "yfinance>=0.2.40",
     "pandas>=2.2.0",
