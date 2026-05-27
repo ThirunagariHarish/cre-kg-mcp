@@ -1,0 +1,1016 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - img [ref=e7]
+      - generic [ref=e9]: TERM
+    - 'button "Current mode: PAPER. Click to switch." [ref=e11] [cursor=pointer]': PAPER
+    - generic [ref=e13]:
+      - generic [ref=e14]: SPX
+      - generic [ref=e15]: 5,234.18
+      - generic [ref=e16]: +0.34%
+    - generic [ref=e17]:
+      - generic [ref=e18]: NDX
+      - generic [ref=e19]: 18,421.30
+      - generic [ref=e20]: +0.67%
+    - generic [ref=e21]:
+      - generic [ref=e22]: DJI
+      - generic [ref=e23]: 38,891.54
+      - generic [ref=e24]: "-0.12%"
+    - generic [ref=e25]:
+      - generic [ref=e26]: VIX
+      - generic [ref=e27]: "14.23"
+      - generic [ref=e28]: "-4.37%"
+    - button "Search symbols, commands... ⌘K" [ref=e29] [cursor=pointer]:
+      - img [ref=e30]
+      - generic [ref=e33]: Search symbols, commands...
+      - generic [ref=e34]: ⌘K
+    - generic [ref=e36]:
+      - generic [ref=e37]: ◆
+      - generic [ref=e38]: BULL QUIET
+      - generic [ref=e39]: 72%
+    - generic [ref=e42]: OPEN
+    - generic [ref=e43]:
+      - 'generic "API: online" [ref=e44]'
+      - 'generic "WS: online" [ref=e46]'
+      - 'generic "MKT: online" [ref=e48]'
+      - 'generic "RISK: warning" [ref=e50]'
+    - generic [ref=e52]:
+      - generic [ref=e53]: 23:31:44
+      - generic [ref=e54]: ET
+    - button "0 alerts" [ref=e56] [cursor=pointer]:
+      - img [ref=e57]
+    - button "Settings" [ref=e60] [cursor=pointer]:
+      - img [ref=e61]
+  - generic [ref=e65]:
+    - generic [ref=e66]:
+      - generic [ref=e67]: AAPL
+      - generic [ref=e68]: "178.32"
+      - generic [ref=e69]: ▲ +1.23 (+0.69%)
+    - generic [ref=e70]:
+      - generic [ref=e71]: NVDA
+      - generic [ref=e72]: "891.50"
+      - generic [ref=e73]: ▲ +12.34 (+1.40%)
+    - generic [ref=e74]:
+      - generic [ref=e75]: TSLA
+      - generic [ref=e76]: "201.12"
+      - generic [ref=e77]: ▼ -3.45 (-1.69%)
+    - generic [ref=e78]:
+      - generic [ref=e79]: MSFT
+      - generic [ref=e80]: "416.78"
+      - generic [ref=e81]: ▲ +2.12 (+0.51%)
+    - generic [ref=e82]:
+      - generic [ref=e83]: AMD
+      - generic [ref=e84]: "178.92"
+      - generic [ref=e85]: ▼ -1.23 (-0.68%)
+    - generic [ref=e86]:
+      - generic [ref=e87]: META
+      - generic [ref=e88]: "503.12"
+      - generic [ref=e89]: ▲ +8.45 (+1.71%)
+    - generic [ref=e90]:
+      - generic [ref=e91]: GOOGL
+      - generic [ref=e92]: "154.32"
+      - generic [ref=e93]: ▲ +0.87 (+0.57%)
+    - generic [ref=e94]:
+      - generic [ref=e95]: AMZN
+      - generic [ref=e96]: "182.91"
+      - generic [ref=e97]: ▲ +3.21 (+1.79%)
+    - generic [ref=e98]:
+      - generic [ref=e99]: SPY
+      - generic [ref=e100]: "523.40"
+      - generic [ref=e101]: ▲ +1.75 (+0.34%)
+    - generic [ref=e102]:
+      - generic [ref=e103]: QQQ
+      - generic [ref=e104]: "448.90"
+      - generic [ref=e105]: ▲ +2.98 (+0.67%)
+    - generic [ref=e106]:
+      - generic [ref=e107]: BRK.B
+      - generic [ref=e108]: "403.55"
+      - generic [ref=e109]: ▼ -0.88 (-0.22%)
+    - generic [ref=e110]:
+      - generic [ref=e111]: JPM
+      - generic [ref=e112]: "196.72"
+      - generic [ref=e113]: ▲ +1.45 (+0.74%)
+    - generic [ref=e114]:
+      - generic [ref=e115]: GS
+      - generic [ref=e116]: "454.12"
+      - generic [ref=e117]: ▼ -2.34 (-0.51%)
+    - generic [ref=e118]:
+      - generic [ref=e119]: COIN
+      - generic [ref=e120]: "238.44"
+      - generic [ref=e121]: ▲ +11.23 (+4.94%)
+    - generic [ref=e122]:
+      - generic [ref=e123]: PLTR
+      - generic [ref=e124]: "24.87"
+      - generic [ref=e125]: ▲ +0.43 (+1.76%)
+    - generic [ref=e126]:
+      - generic [ref=e127]: AAPL
+      - generic [ref=e128]: "178.32"
+      - generic [ref=e129]: ▲ +1.23 (+0.69%)
+    - generic [ref=e130]:
+      - generic [ref=e131]: NVDA
+      - generic [ref=e132]: "891.50"
+      - generic [ref=e133]: ▲ +12.34 (+1.40%)
+    - generic [ref=e134]:
+      - generic [ref=e135]: TSLA
+      - generic [ref=e136]: "201.12"
+      - generic [ref=e137]: ▼ -3.45 (-1.69%)
+    - generic [ref=e138]:
+      - generic [ref=e139]: MSFT
+      - generic [ref=e140]: "416.78"
+      - generic [ref=e141]: ▲ +2.12 (+0.51%)
+    - generic [ref=e142]:
+      - generic [ref=e143]: AMD
+      - generic [ref=e144]: "178.92"
+      - generic [ref=e145]: ▼ -1.23 (-0.68%)
+    - generic [ref=e146]:
+      - generic [ref=e147]: META
+      - generic [ref=e148]: "503.12"
+      - generic [ref=e149]: ▲ +8.45 (+1.71%)
+    - generic [ref=e150]:
+      - generic [ref=e151]: GOOGL
+      - generic [ref=e152]: "154.32"
+      - generic [ref=e153]: ▲ +0.87 (+0.57%)
+    - generic [ref=e154]:
+      - generic [ref=e155]: AMZN
+      - generic [ref=e156]: "182.91"
+      - generic [ref=e157]: ▲ +3.21 (+1.79%)
+    - generic [ref=e158]:
+      - generic [ref=e159]: SPY
+      - generic [ref=e160]: "523.40"
+      - generic [ref=e161]: ▲ +1.75 (+0.34%)
+    - generic [ref=e162]:
+      - generic [ref=e163]: QQQ
+      - generic [ref=e164]: "448.90"
+      - generic [ref=e165]: ▲ +2.98 (+0.67%)
+    - generic [ref=e166]:
+      - generic [ref=e167]: BRK.B
+      - generic [ref=e168]: "403.55"
+      - generic [ref=e169]: ▼ -0.88 (-0.22%)
+    - generic [ref=e170]:
+      - generic [ref=e171]: JPM
+      - generic [ref=e172]: "196.72"
+      - generic [ref=e173]: ▲ +1.45 (+0.74%)
+    - generic [ref=e174]:
+      - generic [ref=e175]: GS
+      - generic [ref=e176]: "454.12"
+      - generic [ref=e177]: ▼ -2.34 (-0.51%)
+    - generic [ref=e178]:
+      - generic [ref=e179]: COIN
+      - generic [ref=e180]: "238.44"
+      - generic [ref=e181]: ▲ +11.23 (+4.94%)
+    - generic [ref=e182]:
+      - generic [ref=e183]: PLTR
+      - generic [ref=e184]: "24.87"
+      - generic [ref=e185]: ▲ +0.43 (+1.76%)
+  - generic [ref=e186]:
+    - generic [ref=e188]:
+      - generic [ref=e189]:
+        - generic [ref=e190]: ◈ Watchlist
+        - generic [ref=e191]: "10"
+        - button "Add symbol" [ref=e192] [cursor=pointer]:
+          - img [ref=e193]
+      - generic [ref=e194]:
+        - img [ref=e195]
+        - textbox "Filter..." [ref=e198]
+      - generic [ref=e199]:
+        - generic [ref=e200]: Symbol
+        - generic [ref=e201]: Last
+        - generic [ref=e202]: "%Chg"
+      - generic [ref=e203]:
+        - generic [ref=e204]:
+          - button "Tech 8" [ref=e205] [cursor=pointer]:
+            - img [ref=e207]
+            - generic [ref=e209]: Tech
+            - generic [ref=e210]: "8"
+          - generic [ref=e211] [cursor=pointer]:
+            - generic [ref=e214]: ▲
+            - generic [ref=e215]:
+              - text: AAPL
+              - paragraph [ref=e216]: Apple Inc.
+            - generic [ref=e217]: "178.00"
+            - generic [ref=e219]: +0.51%
+            - button [ref=e220]:
+              - img [ref=e221]
+          - generic [ref=e224] [cursor=pointer]:
+            - generic [ref=e227]: ▲
+            - generic [ref=e228]:
+              - text: NVDA
+              - paragraph [ref=e229]: NVIDIA Corp.
+            - generic [ref=e230]: "894.50"
+            - generic [ref=e232]: +1.74%
+            - button [ref=e233]:
+              - img [ref=e234]
+          - generic [ref=e237] [cursor=pointer]:
+            - generic [ref=e240]: ▼
+            - generic [ref=e241]:
+              - text: TSLA
+              - paragraph [ref=e242]: Tesla Inc.
+            - generic [ref=e243]: "200.79"
+            - generic [ref=e245]: "-1.85%"
+            - button [ref=e246]:
+              - img [ref=e247]
+          - generic [ref=e250] [cursor=pointer]:
+            - generic [ref=e253]: ▲
+            - generic [ref=e254]:
+              - text: MSFT
+              - paragraph [ref=e255]: Microsoft Corp.
+            - generic [ref=e256]: "416.62"
+            - generic [ref=e258]: +0.47%
+            - button [ref=e259]:
+              - img [ref=e260]
+          - generic [ref=e263] [cursor=pointer]:
+            - generic [ref=e266]: ▼
+            - generic [ref=e267]:
+              - text: AMD
+              - paragraph [ref=e268]: Adv. Micro Dev.
+            - generic [ref=e269]: "178.87"
+            - generic [ref=e271]: "-0.71%"
+            - button [ref=e272]:
+              - img [ref=e273]
+          - generic [ref=e276] [cursor=pointer]:
+            - generic [ref=e279]: ▲
+            - generic [ref=e280]:
+              - text: META
+              - paragraph [ref=e281]: Meta Platforms
+            - generic [ref=e282]: "504.00"
+            - generic [ref=e284]: +1.89%
+            - button [ref=e285]:
+              - img [ref=e286]
+          - generic [ref=e289] [cursor=pointer]:
+            - generic [ref=e292]: ▲
+            - generic [ref=e293]:
+              - text: GOOGL
+              - paragraph [ref=e294]: Alphabet Inc.
+            - generic [ref=e295]: "154.72"
+            - generic [ref=e297]: +0.83%
+            - button [ref=e298]:
+              - img [ref=e299]
+          - generic [ref=e302] [cursor=pointer]:
+            - generic [ref=e305]: ▲
+            - generic [ref=e306]:
+              - text: AMZN
+              - paragraph [ref=e307]: Amazon.com Inc.
+            - generic [ref=e308]: "183.28"
+            - generic [ref=e310]: +1.99%
+            - button [ref=e311]:
+              - img [ref=e312]
+        - generic [ref=e315]:
+          - button "ETFs 2" [ref=e316] [cursor=pointer]:
+            - img [ref=e318]
+            - generic [ref=e320]: ETFs
+            - generic [ref=e321]: "2"
+          - generic [ref=e322] [cursor=pointer]:
+            - generic [ref=e325]: ▲
+            - generic [ref=e326]:
+              - text: SPY
+              - paragraph [ref=e327]: SPDR S&P 500 ETF
+            - generic [ref=e328]: "523.38"
+            - generic [ref=e330]: +0.33%
+            - button [ref=e331]:
+              - img [ref=e332]
+          - generic [ref=e335] [cursor=pointer]:
+            - generic [ref=e338]: ▲
+            - generic [ref=e339]:
+              - text: QQQ
+              - paragraph [ref=e340]: Invesco QQQ Trust
+            - generic [ref=e341]: "449.62"
+            - generic [ref=e343]: +0.83%
+            - button [ref=e344]:
+              - img [ref=e345]
+    - generic [ref=e350]:
+      - generic [ref=e351]:
+        - button "Positions 5" [ref=e352] [cursor=pointer]:
+          - generic [ref=e353]: Positions
+          - generic [ref=e354]: "5"
+        - button "Agents 23" [ref=e355] [cursor=pointer]:
+          - generic [ref=e356]: Agents
+          - generic [ref=e357]: "23"
+        - button "Orders 6" [ref=e358] [cursor=pointer]:
+          - generic [ref=e359]: Orders
+          - generic [ref=e360]: "6"
+        - button "Signals 5" [ref=e361] [cursor=pointer]:
+          - generic [ref=e362]: Signals
+          - generic [ref=e363]: "5"
+        - button "Chart" [ref=e364] [cursor=pointer]:
+          - generic [ref=e365]: Chart
+        - button "Analytics" [ref=e366] [cursor=pointer]:
+          - generic [ref=e367]: Analytics
+        - button "Intelligence" [ref=e368] [cursor=pointer]:
+          - generic [ref=e369]: Intelligence
+        - button "Backtest" [ref=e370] [cursor=pointer]:
+          - generic [ref=e371]: Backtest
+      - generic [ref=e372]:
+        - generic [ref=e2296]:
+          - generic [ref=e2297]:
+            - img [ref=e2298]
+            - generic [ref=e2300]: ◈ Agents
+            - generic [ref=e2301]: 23 agents
+            - button "Create new agent" [active] [ref=e2302] [cursor=pointer]:
+              - img [ref=e2303]
+              - text: NEW AGENT
+          - generic [ref=e2304]:
+            - generic [ref=e2307]: 20 RUNNING
+            - generic [ref=e2310]: 2 PAUSED
+            - generic [ref=e2312]:
+              - generic [ref=e2313]: SIGNALS
+              - generic [ref=e2314]: "538"
+            - generic [ref=e2316]:
+              - generic [ref=e2317]: TODAY
+              - generic [ref=e2318]: +$7,800
+            - generic [ref=e2320]:
+              - generic [ref=e2321]: TOTAL
+              - generic [ref=e2322]: +$50,950
+          - generic [ref=e2323]:
+            - button "ALL" [ref=e2324] [cursor=pointer]
+            - button "ALGORITHM" [ref=e2325] [cursor=pointer]
+            - button "DISCORD" [ref=e2326] [cursor=pointer]
+            - button "AI" [ref=e2327] [cursor=pointer]
+            - button "OPTIONS" [ref=e2328] [cursor=pointer]
+            - button "PORTFOLIO" [ref=e2329] [cursor=pointer]
+            - button "DATA" [ref=e2330] [cursor=pointer]
+            - button "20" [ref=e2331] [cursor=pointer]: "20"
+            - button "2" [ref=e2333] [cursor=pointer]: "2"
+            - button "0" [ref=e2335] [cursor=pointer]: "0"
+            - textbox "Filter..." [ref=e2338]
+          - table [ref=e2340]:
+            - rowgroup [ref=e2341]:
+              - row "Name Status Signals Win % Today P&L Total P&L 7D" [ref=e2342]:
+                - columnheader [ref=e2343]
+                - columnheader "Name" [ref=e2344]
+                - columnheader "Status" [ref=e2345]
+                - columnheader "Signals" [ref=e2346]
+                - columnheader "Win %" [ref=e2347]
+                - columnheader "Today P&L" [ref=e2348]
+                - columnheader "Total P&L" [ref=e2349]
+                - columnheader "7D" [ref=e2350]
+            - rowgroup [ref=e2351]:
+              - row "ALGO Open detail for Breakout Trader RUNNING 47 74% +$420 +$3,240" [ref=e2352] [cursor=pointer]:
+                - cell [ref=e2353]
+                - cell "ALGO Open detail for Breakout Trader" [ref=e2355]:
+                  - generic [ref=e2356]:
+                    - generic [ref=e2357]: ALGO
+                    - button "Open detail for Breakout Trader" [ref=e2358]: Breakout Trader
+                - cell "RUNNING" [ref=e2359]:
+                  - generic [ref=e2360]: RUNNING
+                - cell "47" [ref=e2362]
+                - cell "74%" [ref=e2363]:
+                  - generic [ref=e2367]: 74%
+                - cell "+$420" [ref=e2368]:
+                  - generic [ref=e2369]: +$420
+                - cell "+$3,240" [ref=e2370]:
+                  - generic [ref=e2371]: +$3,240
+                - cell [ref=e2372]:
+                  - img [ref=e2374]
+              - row "DISC Open detail for Albert Pro Trader RUNNING 31 77% +$890 +$5,800" [ref=e2378] [cursor=pointer]:
+                - cell [ref=e2379]
+                - cell "DISC Open detail for Albert Pro Trader" [ref=e2381]:
+                  - generic [ref=e2382]:
+                    - generic [ref=e2383]: DISC
+                    - button "Open detail for Albert Pro Trader" [ref=e2384]: Albert Pro Trader
+                - cell "RUNNING" [ref=e2385]:
+                  - generic [ref=e2386]: RUNNING
+                - cell "31" [ref=e2388]
+                - cell "77%" [ref=e2389]:
+                  - generic [ref=e2393]: 77%
+                - cell "+$890" [ref=e2394]:
+                  - generic [ref=e2395]: +$890
+                - cell "+$5,800" [ref=e2396]:
+                  - generic [ref=e2397]: +$5,800
+                - cell [ref=e2398]:
+                  - img [ref=e2400]
+              - row "DISC Open detail for VCP Setups Trader RUNNING 28 71% +$340 +$2,150" [ref=e2404] [cursor=pointer]:
+                - cell [ref=e2405]
+                - cell "DISC Open detail for VCP Setups Trader" [ref=e2407]:
+                  - generic [ref=e2408]:
+                    - generic [ref=e2409]: DISC
+                    - button "Open detail for VCP Setups Trader" [ref=e2410]: VCP Setups Trader
+                - cell "RUNNING" [ref=e2411]:
+                  - generic [ref=e2412]: RUNNING
+                - cell "28" [ref=e2414]
+                - cell "71%" [ref=e2415]:
+                  - generic [ref=e2419]: 71%
+                - cell "+$340" [ref=e2420]:
+                  - generic [ref=e2421]: +$340
+                - cell "+$2,150" [ref=e2422]:
+                  - generic [ref=e2423]: +$2,150
+                - cell [ref=e2424]:
+                  - img [ref=e2426]
+              - row "ALGO Open detail for Dark Pool Follow RUNNING 19 63% — +$1,890" [ref=e2430] [cursor=pointer]:
+                - cell [ref=e2431]
+                - cell "ALGO Open detail for Dark Pool Follow" [ref=e2433]:
+                  - generic [ref=e2434]:
+                    - generic [ref=e2435]: ALGO
+                    - button "Open detail for Dark Pool Follow" [ref=e2436]: Dark Pool Follow
+                - cell "RUNNING" [ref=e2437]:
+                  - generic [ref=e2438]: RUNNING
+                - cell "19" [ref=e2440]
+                - cell "63%" [ref=e2441]:
+                  - generic [ref=e2445]: 63%
+                - cell "—" [ref=e2446]
+                - cell "+$1,890" [ref=e2447]:
+                  - generic [ref=e2448]: +$1,890
+                - cell [ref=e2449]:
+                  - img [ref=e2451]
+              - row "ALGO Open detail for Earnings Momentum RUNNING 15 73% +$1,200 +$4,320" [ref=e2455] [cursor=pointer]:
+                - cell [ref=e2456]
+                - cell "ALGO Open detail for Earnings Momentum" [ref=e2458]:
+                  - generic [ref=e2459]:
+                    - generic [ref=e2460]: ALGO
+                    - button "Open detail for Earnings Momentum" [ref=e2461]: Earnings Momentum
+                - cell "RUNNING" [ref=e2462]:
+                  - generic [ref=e2463]: RUNNING
+                - cell "15" [ref=e2465]
+                - cell "73%" [ref=e2466]:
+                  - generic [ref=e2470]: 73%
+                - cell "+$1,200" [ref=e2471]:
+                  - generic [ref=e2472]: +$1,200
+                - cell "+$4,320" [ref=e2473]:
+                  - generic [ref=e2474]: +$4,320
+                - cell [ref=e2475]:
+                  - img [ref=e2477]
+              - row "OPTS Open detail for Iron Condor RUNNING 22 82% +$220 +$3,100" [ref=e2481] [cursor=pointer]:
+                - cell [ref=e2482]
+                - cell "OPTS Open detail for Iron Condor" [ref=e2484]:
+                  - generic [ref=e2485]:
+                    - generic [ref=e2486]: OPTS
+                    - button "Open detail for Iron Condor" [ref=e2487]: Iron Condor
+                - cell "RUNNING" [ref=e2488]:
+                  - generic [ref=e2489]: RUNNING
+                - cell "22" [ref=e2491]
+                - cell "82%" [ref=e2492]:
+                  - generic [ref=e2496]: 82%
+                - cell "+$220" [ref=e2497]:
+                  - generic [ref=e2498]: +$220
+                - cell "+$3,100" [ref=e2499]:
+                  - generic [ref=e2500]: +$3,100
+                - cell [ref=e2501]:
+                  - img [ref=e2503]
+              - row "ALGO Open detail for Gap & Go Executor RUNNING 34 71% +$560 +$2,780" [ref=e2507] [cursor=pointer]:
+                - cell [ref=e2508]
+                - cell "ALGO Open detail for Gap & Go Executor" [ref=e2510]:
+                  - generic [ref=e2511]:
+                    - generic [ref=e2512]: ALGO
+                    - button "Open detail for Gap & Go Executor" [ref=e2513]: Gap & Go Executor
+                - cell "RUNNING" [ref=e2514]:
+                  - generic [ref=e2515]: RUNNING
+                - cell "34" [ref=e2517]
+                - cell "71%" [ref=e2518]:
+                  - generic [ref=e2522]: 71%
+                - cell "+$560" [ref=e2523]:
+                  - generic [ref=e2524]: +$560
+                - cell "+$2,780" [ref=e2525]:
+                  - generic [ref=e2526]: +$2,780
+                - cell [ref=e2527]:
+                  - img [ref=e2529]
+              - row "PORT Open detail for Auto Hedge RUNNING 8 88% +$120 +$450" [ref=e2533] [cursor=pointer]:
+                - cell [ref=e2534]
+                - cell "PORT Open detail for Auto Hedge" [ref=e2536]:
+                  - generic [ref=e2537]:
+                    - generic [ref=e2538]: PORT
+                    - button "Open detail for Auto Hedge" [ref=e2539]: Auto Hedge
+                - cell "RUNNING" [ref=e2540]:
+                  - generic [ref=e2541]: RUNNING
+                - cell "8" [ref=e2543]
+                - cell "88%" [ref=e2544]:
+                  - generic [ref=e2548]: 88%
+                - cell "+$120" [ref=e2549]:
+                  - generic [ref=e2550]: +$120
+                - cell "+$450" [ref=e2551]:
+                  - generic [ref=e2552]: +$450
+                - cell [ref=e2553]:
+                  - img [ref=e2555]
+              - row "ALGO Open detail for UW Flow Signals RUNNING 52 73% +$1,340 +$7,200" [ref=e2559] [cursor=pointer]:
+                - cell [ref=e2560]
+                - cell "ALGO Open detail for UW Flow Signals" [ref=e2562]:
+                  - generic [ref=e2563]:
+                    - generic [ref=e2564]: ALGO
+                    - button "Open detail for UW Flow Signals" [ref=e2565]: UW Flow Signals
+                - cell "RUNNING" [ref=e2566]:
+                  - generic [ref=e2567]: RUNNING
+                - cell "52" [ref=e2569]
+                - cell "73%" [ref=e2570]:
+                  - generic [ref=e2574]: 73%
+                - cell "+$1,340" [ref=e2575]:
+                  - generic [ref=e2576]: +$1,340
+                - cell "+$7,200" [ref=e2577]:
+                  - generic [ref=e2578]: +$7,200
+                - cell [ref=e2579]:
+                  - img [ref=e2581]
+              - row "AI Open detail for LSTM Predictor RUNNING 41 68% +$680 +$3,900" [ref=e2585] [cursor=pointer]:
+                - cell [ref=e2586]
+                - cell "AI Open detail for LSTM Predictor" [ref=e2588]:
+                  - generic [ref=e2589]:
+                    - generic [ref=e2590]: AI
+                    - button "Open detail for LSTM Predictor" [ref=e2591]: LSTM Predictor
+                - cell "RUNNING" [ref=e2592]:
+                  - generic [ref=e2593]: RUNNING
+                - cell "41" [ref=e2595]
+                - cell "68%" [ref=e2596]:
+                  - generic [ref=e2600]: 68%
+                - cell "+$680" [ref=e2601]:
+                  - generic [ref=e2602]: +$680
+                - cell "+$3,900" [ref=e2603]:
+                  - generic [ref=e2604]: +$3,900
+                - cell [ref=e2605]:
+                  - img [ref=e2607]
+              - row "AI Open detail for NLP Sentiment PAUSED 29 62% — +$1,200" [ref=e2611] [cursor=pointer]:
+                - cell [ref=e2612]
+                - cell "AI Open detail for NLP Sentiment" [ref=e2614]:
+                  - generic [ref=e2615]:
+                    - generic [ref=e2616]: AI
+                    - button "Open detail for NLP Sentiment" [ref=e2617]: NLP Sentiment
+                - cell "PAUSED" [ref=e2618]:
+                  - generic [ref=e2619]: PAUSED
+                - cell "29" [ref=e2621]
+                - cell "62%" [ref=e2622]:
+                  - generic [ref=e2626]: 62%
+                - cell "—" [ref=e2627]
+                - cell "+$1,200" [ref=e2628]:
+                  - generic [ref=e2629]: +$1,200
+                - cell [ref=e2630]:
+                  - img [ref=e2632]
+              - row "DATA Open detail for Breadth Analyzer RUNNING 0 — — —" [ref=e2636] [cursor=pointer]:
+                - cell [ref=e2637]
+                - cell "DATA Open detail for Breadth Analyzer" [ref=e2639]:
+                  - generic [ref=e2640]:
+                    - generic [ref=e2641]: DATA
+                    - button "Open detail for Breadth Analyzer" [ref=e2642]: Breadth Analyzer
+                - cell "RUNNING" [ref=e2643]:
+                  - generic [ref=e2644]: RUNNING
+                - cell "0" [ref=e2646]
+                - cell "—" [ref=e2647]
+                - cell "—" [ref=e2648]
+                - cell "—" [ref=e2649]
+                - cell [ref=e2650]:
+                  - img [ref=e2652]
+              - row "DATA Open detail for Regime Detector RUNNING 0 — — —" [ref=e2656] [cursor=pointer]:
+                - cell [ref=e2657]
+                - cell "DATA Open detail for Regime Detector" [ref=e2659]:
+                  - generic [ref=e2660]:
+                    - generic [ref=e2661]: DATA
+                    - button "Open detail for Regime Detector" [ref=e2662]: Regime Detector
+                - cell "RUNNING" [ref=e2663]:
+                  - generic [ref=e2664]: RUNNING
+                - cell "0" [ref=e2666]
+                - cell "—" [ref=e2667]
+                - cell "—" [ref=e2668]
+                - cell "—" [ref=e2669]
+                - cell [ref=e2670]:
+                  - img [ref=e2672]
+              - row "PORT Open detail for Portfolio Manager RUNNING 12 83% +$280 +$1,800" [ref=e2676] [cursor=pointer]:
+                - cell [ref=e2677]
+                - cell "PORT Open detail for Portfolio Manager" [ref=e2679]:
+                  - generic [ref=e2680]:
+                    - generic [ref=e2681]: PORT
+                    - button "Open detail for Portfolio Manager" [ref=e2682]: Portfolio Manager
+                - cell "RUNNING" [ref=e2683]:
+                  - generic [ref=e2684]: RUNNING
+                - cell "12" [ref=e2686]
+                - cell "83%" [ref=e2687]:
+                  - generic [ref=e2691]: 83%
+                - cell "+$280" [ref=e2692]:
+                  - generic [ref=e2693]: +$280
+                - cell "+$1,800" [ref=e2694]:
+                  - generic [ref=e2695]: +$1,800
+                - cell [ref=e2696]:
+                  - img [ref=e2698]
+              - row "ALGO Open detail for UW Dark Pool RUNNING 23 70% +$380 +$2,100" [ref=e2702] [cursor=pointer]:
+                - cell [ref=e2703]
+                - cell "ALGO Open detail for UW Dark Pool" [ref=e2705]:
+                  - generic [ref=e2706]:
+                    - generic [ref=e2707]: ALGO
+                    - button "Open detail for UW Dark Pool" [ref=e2708]: UW Dark Pool
+                - cell "RUNNING" [ref=e2709]:
+                  - generic [ref=e2710]: RUNNING
+                - cell "23" [ref=e2712]
+                - cell "70%" [ref=e2713]:
+                  - generic [ref=e2717]: 70%
+                - cell "+$380" [ref=e2718]:
+                  - generic [ref=e2719]: +$380
+                - cell "+$2,100" [ref=e2720]:
+                  - generic [ref=e2721]: +$2,100
+                - cell [ref=e2722]:
+                  - img [ref=e2724]
+              - row "ALGO Open detail for Sector Rotation IDLE 18 72% — +$2,400" [ref=e2728] [cursor=pointer]:
+                - cell [ref=e2729]
+                - cell "ALGO Open detail for Sector Rotation" [ref=e2731]:
+                  - generic [ref=e2732]:
+                    - generic [ref=e2733]: ALGO
+                    - button "Open detail for Sector Rotation" [ref=e2734]: Sector Rotation
+                - cell "IDLE" [ref=e2735]:
+                  - generic [ref=e2736]: IDLE
+                - cell "18" [ref=e2738]
+                - cell "72%" [ref=e2739]:
+                  - generic [ref=e2743]: 72%
+                - cell "—" [ref=e2744]
+                - cell "+$2,400" [ref=e2745]:
+                  - generic [ref=e2746]: +$2,400
+                - cell [ref=e2747]:
+                  - img [ref=e2749]
+              - row "AI Open detail for STBN AI Signals RUNNING 38 71% +$820 +$4,100" [ref=e2753] [cursor=pointer]:
+                - cell [ref=e2754]
+                - cell "AI Open detail for STBN AI Signals" [ref=e2756]:
+                  - generic [ref=e2757]:
+                    - generic [ref=e2758]: AI
+                    - button "Open detail for STBN AI Signals" [ref=e2759]: STBN AI Signals
+                - cell "RUNNING" [ref=e2760]:
+                  - generic [ref=e2761]: RUNNING
+                - cell "38" [ref=e2763]
+                - cell "71%" [ref=e2764]:
+                  - generic [ref=e2768]: 71%
+                - cell "+$820" [ref=e2769]:
+                  - generic [ref=e2770]: +$820
+                - cell "+$4,100" [ref=e2771]:
+                  - generic [ref=e2772]: +$4,100
+                - cell [ref=e2773]:
+                  - img [ref=e2775]
+              - row "ALGO Open detail for Short Squeeze PAUSED 11 64% — +$890" [ref=e2779] [cursor=pointer]:
+                - cell [ref=e2780]
+                - cell "ALGO Open detail for Short Squeeze" [ref=e2782]:
+                  - generic [ref=e2783]:
+                    - generic [ref=e2784]: ALGO
+                    - button "Open detail for Short Squeeze" [ref=e2785]: Short Squeeze
+                - cell "PAUSED" [ref=e2786]:
+                  - generic [ref=e2787]: PAUSED
+                - cell "11" [ref=e2789]
+                - cell "64%" [ref=e2790]:
+                  - generic [ref=e2794]: 64%
+                - cell "—" [ref=e2795]
+                - cell "+$890" [ref=e2796]:
+                  - generic [ref=e2797]: +$890
+                - cell [ref=e2798]:
+                  - img [ref=e2800]
+              - row "DATA Open detail for Congress Tracker RUNNING 14 71% +$240 +$1,680" [ref=e2804] [cursor=pointer]:
+                - cell [ref=e2805]
+                - cell "DATA Open detail for Congress Tracker" [ref=e2807]:
+                  - generic [ref=e2808]:
+                    - generic [ref=e2809]: DATA
+                    - button "Open detail for Congress Tracker" [ref=e2810]: Congress Tracker
+                - cell "RUNNING" [ref=e2811]:
+                  - generic [ref=e2812]: RUNNING
+                - cell "14" [ref=e2814]
+                - cell "71%" [ref=e2815]:
+                  - generic [ref=e2819]: 71%
+                - cell "+$240" [ref=e2820]:
+                  - generic [ref=e2821]: +$240
+                - cell "+$1,680" [ref=e2822]:
+                  - generic [ref=e2823]: +$1,680
+                - cell [ref=e2824]:
+                  - img [ref=e2826]
+              - row "ALGO Open detail for Mean Reversion RUNNING 29 69% +$310 +$1,950" [ref=e2830] [cursor=pointer]:
+                - cell [ref=e2831]
+                - cell "ALGO Open detail for Mean Reversion" [ref=e2833]:
+                  - generic [ref=e2834]:
+                    - generic [ref=e2835]: ALGO
+                    - button "Open detail for Mean Reversion" [ref=e2836]: Mean Reversion
+                - cell "RUNNING" [ref=e2837]:
+                  - generic [ref=e2838]: RUNNING
+                - cell "29" [ref=e2840]
+                - cell "69%" [ref=e2841]:
+                  - generic [ref=e2845]: 69%
+                - cell "+$310" [ref=e2846]:
+                  - generic [ref=e2847]: +$310
+                - cell "+$1,950" [ref=e2848]:
+                  - generic [ref=e2849]: +$1,950
+                - cell [ref=e2850]:
+                  - img [ref=e2852]
+              - row "PORT Open detail for Risk Monitor RUNNING 0 — — —" [ref=e2856] [cursor=pointer]:
+                - cell [ref=e2857]
+                - cell "PORT Open detail for Risk Monitor" [ref=e2859]:
+                  - generic [ref=e2860]:
+                    - generic [ref=e2861]: PORT
+                    - button "Open detail for Risk Monitor" [ref=e2862]: Risk Monitor
+                - cell "RUNNING" [ref=e2863]:
+                  - generic [ref=e2864]: RUNNING
+                - cell "0" [ref=e2866]
+                - cell "—" [ref=e2867]
+                - cell "—" [ref=e2868]
+                - cell "—" [ref=e2869]
+                - cell [ref=e2870]:
+                  - img [ref=e2872]
+              - row "DISC Open detail for Discord Reader RUNNING 67 0% — —" [ref=e2876] [cursor=pointer]:
+                - cell [ref=e2877]
+                - cell "DISC Open detail for Discord Reader" [ref=e2879]:
+                  - generic [ref=e2880]:
+                    - generic [ref=e2881]: DISC
+                    - button "Open detail for Discord Reader" [ref=e2882]: Discord Reader
+                - cell "RUNNING" [ref=e2883]:
+                  - generic [ref=e2884]: RUNNING
+                - cell "67" [ref=e2886]
+                - cell "0%" [ref=e2887]:
+                  - generic [ref=e2890]: 0%
+                - cell "—" [ref=e2891]
+                - cell "—" [ref=e2892]
+                - cell [ref=e2893]:
+                  - img [ref=e2895]
+              - row "DATA Open detail for Broker Health RUNNING 0 — — —" [ref=e2899] [cursor=pointer]:
+                - cell [ref=e2900]
+                - cell "DATA Open detail for Broker Health" [ref=e2902]:
+                  - generic [ref=e2903]:
+                    - generic [ref=e2904]: DATA
+                    - button "Open detail for Broker Health" [ref=e2905]: Broker Health
+                - cell "RUNNING" [ref=e2906]:
+                  - generic [ref=e2907]: RUNNING
+                - cell "0" [ref=e2909]
+                - cell "—" [ref=e2910]
+                - cell "—" [ref=e2911]
+                - cell "—" [ref=e2912]
+                - cell [ref=e2913]:
+                  - img [ref=e2915]
+        - dialog "Create new agent" [ref=e2919]:
+          - generic [ref=e2921]:
+            - generic [ref=e2922]:
+              - generic [ref=e2923]: ◈ New Agent
+              - button "Cancel wizard" [ref=e2924] [cursor=pointer]:
+                - img [ref=e2925]
+            - generic [ref=e2928]:
+              - generic [ref=e2929]:
+                - generic [ref=e2930]: "1"
+                - generic [ref=e2931]: Template
+              - generic [ref=e2933]:
+                - generic [ref=e2934]: "2"
+                - generic [ref=e2935]: Configure
+              - generic [ref=e2937]:
+                - generic [ref=e2938]: "3"
+                - generic [ref=e2939]: Risk
+              - generic [ref=e2941]:
+                - generic [ref=e2942]: "4"
+                - generic [ref=e2943]: Review
+            - generic [ref=e2944]:
+              - paragraph [ref=e2945]: Choose a template to start from. You can customize all settings in the next steps.
+              - generic [ref=e2946]:
+                - button "⚡ Breakout Trader ALGO Scans UW options flow for golden sweeps and blocks. Targets momentum breakouts above multi-week highs." [ref=e2947] [cursor=pointer]:
+                  - generic [ref=e2948]:
+                    - generic [ref=e2949]: ⚡
+                    - generic [ref=e2950]:
+                      - generic [ref=e2952]: Breakout Trader
+                      - text: ALGO
+                  - paragraph [ref=e2953]: Scans UW options flow for golden sweeps and blocks. Targets momentum breakouts above multi-week highs.
+                - button "💬 Discord Signal Reader DISC Monitors Discord channels for trade signals. Parses options alerts from professional traders." [ref=e2954] [cursor=pointer]:
+                  - generic [ref=e2955]:
+                    - generic [ref=e2956]: 💬
+                    - generic [ref=e2957]:
+                      - generic [ref=e2959]: Discord Signal Reader
+                      - text: DISC
+                  - paragraph [ref=e2960]: Monitors Discord channels for trade signals. Parses options alerts from professional traders.
+                - button "🦅 Options Iron Condor OPTS Opens iron condors on high-IV underlyings. 20-delta short legs, 30-60 DTE. Targets 50% profit." [ref=e2961] [cursor=pointer]:
+                  - generic [ref=e2962]:
+                    - generic [ref=e2963]: 🦅
+                    - generic [ref=e2964]:
+                      - generic [ref=e2966]: Options Iron Condor
+                      - text: OPTS
+                  - paragraph [ref=e2967]: Opens iron condors on high-IV underlyings. 20-delta short legs, 30-60 DTE. Targets 50% profit.
+                - button "🤖 AI Sentiment AI Uses NLP transformers to analyze Reddit, Twitter, and news sentiment. Trades sentiment spikes." [ref=e2968] [cursor=pointer]:
+                  - generic [ref=e2969]:
+                    - generic [ref=e2970]: 🤖
+                    - generic [ref=e2971]:
+                      - generic [ref=e2973]: AI Sentiment
+                      - text: AI
+                  - paragraph [ref=e2974]: Uses NLP transformers to analyze Reddit, Twitter, and news sentiment. Trades sentiment spikes.
+                - button "🔮 Dark Pool ALGO Follows large dark pool block prints. Enters when 3+ blocks accumulate at same strike in 15 min." [ref=e2975] [cursor=pointer]:
+                  - generic [ref=e2976]:
+                    - generic [ref=e2977]: 🔮
+                    - generic [ref=e2978]:
+                      - generic [ref=e2980]: Dark Pool
+                      - text: ALGO
+                  - paragraph [ref=e2981]: Follows large dark pool block prints. Enters when 3+ blocks accumulate at same strike in 15 min.
+                - button "📈 Momentum ALGO Rides strong momentum moves with volume confirmation. Uses relative strength and sector rotation." [ref=e2982] [cursor=pointer]:
+                  - generic [ref=e2983]:
+                    - generic [ref=e2984]: 📈
+                    - generic [ref=e2985]:
+                      - generic [ref=e2987]: Momentum
+                      - text: ALGO
+                  - paragraph [ref=e2988]: Rides strong momentum moves with volume confirmation. Uses relative strength and sector rotation.
+                - button "↩ Mean Reversion ALGO Fades oversold/overbought stocks back to 20-day moving average. Counter-trend with tight stops." [ref=e2989] [cursor=pointer]:
+                  - generic [ref=e2990]:
+                    - generic [ref=e2991]: ↩
+                    - generic [ref=e2992]:
+                      - generic [ref=e2994]: Mean Reversion
+                      - text: ALGO
+                  - paragraph [ref=e2995]: Fades oversold/overbought stocks back to 20-day moving average. Counter-trend with tight stops.
+                - button "⚙ Custom ALGO Start from scratch with blank configuration. Manually define all parameters." [ref=e2996] [cursor=pointer]:
+                  - generic [ref=e2997]:
+                    - generic [ref=e2998]: ⚙
+                    - generic [ref=e2999]:
+                      - generic [ref=e3001]: Custom
+                      - text: ALGO
+                  - paragraph [ref=e3002]: Start from scratch with blank configuration. Manually define all parameters.
+            - generic [ref=e3003]:
+              - button "Previous step" [disabled] [ref=e3004]:
+                - img [ref=e3005]
+                - text: BACK
+              - button "Next step" [disabled] [ref=e3012]:
+                - text: NEXT
+                - img [ref=e3013]
+    - generic [ref=e467]:
+      - generic [ref=e468]:
+        - generic [ref=e469]:
+          - button "EQUITY" [ref=e470] [cursor=pointer]
+          - button "OPTIONS" [ref=e471] [cursor=pointer]
+          - button "SPREAD" [ref=e472] [cursor=pointer]
+        - generic [ref=e473]:
+          - generic [ref=e474]:
+            - generic [ref=e475]: ◈ Order Entry
+            - generic [ref=e476]: AAPL
+          - generic [ref=e477]:
+            - generic [ref=e478]:
+              - generic [ref=e479]: Symbol
+              - textbox "AAPL" [ref=e480]
+            - generic [ref=e481]:
+              - generic [ref=e482]: Side
+              - generic [ref=e483]:
+                - button "▲ BUY" [ref=e484] [cursor=pointer]
+                - button "▼ SELL" [ref=e485] [cursor=pointer]
+            - generic [ref=e486]:
+              - generic [ref=e487]: Quantity
+              - spinbutton [ref=e488]
+            - generic [ref=e489]:
+              - generic [ref=e490]: Order Type
+              - generic [ref=e491]:
+                - button "MARKET" [ref=e492] [cursor=pointer]
+                - button "LIMIT" [ref=e493] [cursor=pointer]
+                - button "STOP" [ref=e494] [cursor=pointer]
+                - button "STOP_LIMIT" [ref=e495] [cursor=pointer]
+            - generic [ref=e496]:
+              - generic [ref=e497]: Time in Force
+              - generic [ref=e498]:
+                - button "DAY" [ref=e499] [cursor=pointer]
+                - button "GTC" [ref=e500] [cursor=pointer]
+                - button "IOC" [ref=e501] [cursor=pointer]
+                - button "FOK" [ref=e502] [cursor=pointer]
+          - generic [ref=e503]:
+            - paragraph [ref=e504]: Risk Preview
+            - generic [ref=e505]:
+              - generic [ref=e506]:
+                - generic [ref=e507]: Est. Value
+                - generic [ref=e508]: $17,800
+              - generic [ref=e509]:
+                - generic [ref=e510]: "% Portfolio"
+                - generic [ref=e511]: 17.8%
+              - generic [ref=e512]:
+                - generic [ref=e513]: Max Loss
+                - generic [ref=e514]: $356
+              - generic [ref=e515]:
+                - generic [ref=e516]: R/R
+                - generic [ref=e517]: 2.5x
+              - generic [ref=e518]:
+                - generic [ref=e519]: Cash Avail.
+                - generic [ref=e520]: $35,157
+          - generic [ref=e521]:
+            - button "CLR" [ref=e522] [cursor=pointer]
+            - button "BUY AAPL ↵" [ref=e523] [cursor=pointer]
+      - generic [ref=e525]:
+        - generic [ref=e526]:
+          - img [ref=e527]
+          - generic [ref=e529]: ◈ Risk Metrics
+          - generic [ref=e530]: CLEAR
+        - generic [ref=e531]:
+          - generic [ref=e533]:
+            - generic [ref=e534]: Daily Loss
+            - generic [ref=e535]: 11.6%
+          - generic [ref=e539]:
+            - generic [ref=e540]: Exposure
+            - generic [ref=e541]: 64.8%
+        - generic [ref=e544]:
+          - generic [ref=e545]:
+            - generic [ref=e546]: Total Exposure
+            - generic [ref=e547]: $64.8K
+          - generic [ref=e548]:
+            - generic [ref=e549]: Net Exposure
+            - generic [ref=e550]: $58.8K
+          - generic [ref=e551]:
+            - generic [ref=e552]: Daily P&L
+            - generic [ref=e553]: $578.55
+          - generic [ref=e554]:
+            - generic [ref=e555]: Max Drawdown
+            - generic [ref=e556]: 1.24%
+          - generic [ref=e557]:
+            - generic [ref=e558]: Open Positions
+            - generic [ref=e559]: "5"
+        - generic [ref=e560]:
+          - paragraph [ref=e561]: Policy Limits
+          - generic [ref=e562]:
+            - generic [ref=e563]: Max Position
+            - generic [ref=e564]: 15% / $50.0K
+          - generic [ref=e565]:
+            - generic [ref=e566]: Daily Loss Limit
+            - generic [ref=e567]: $5.0K
+          - generic [ref=e568]:
+            - generic [ref=e569]: Max Drawdown
+            - generic [ref=e570]: 5%
+          - generic [ref=e571]:
+            - generic [ref=e572]: Max Order Value
+            - generic [ref=e573]: $25.0K
+        - button "KILL SWITCH" [ref=e575] [cursor=pointer]:
+          - img [ref=e576]
+          - text: KILL SWITCH
+      - generic [ref=e581]:
+        - generic [ref=e583]: ◈ Position Sizer
+        - generic [ref=e584]:
+          - generic [ref=e585]:
+            - generic [ref=e586]: Account Size ($)
+            - spinbutton [ref=e587]: "100000"
+          - generic [ref=e588]:
+            - generic [ref=e589]:
+              - generic [ref=e590]: Risk Per Trade
+              - generic [ref=e591]: 1.00%
+            - slider [ref=e592] [cursor=pointer]: "1"
+            - generic [ref=e593]:
+              - generic [ref=e594]: 0.50%
+              - generic [ref=e595]: 5.00%
+          - generic [ref=e596]:
+            - generic [ref=e597]:
+              - generic [ref=e598]: Win Rate
+              - generic [ref=e599]: 55%
+            - slider [ref=e600] [cursor=pointer]: "55"
+            - generic [ref=e601]:
+              - generic [ref=e602]: 10%
+              - generic [ref=e603]: 90%
+          - generic [ref=e604]:
+            - generic [ref=e605]:
+              - generic [ref=e606]: Avg Win ($)
+              - spinbutton [ref=e607]: "500"
+            - generic [ref=e608]:
+              - generic [ref=e609]: Avg Loss ($)
+              - spinbutton [ref=e610]: "300"
+          - generic [ref=e611]:
+            - generic [ref=e612]: Current Price ($)
+            - spinbutton [ref=e613]: "185"
+          - generic [ref=e614]:
+            - generic [ref=e615]:
+              - generic [ref=e616]: Stop Loss
+              - generic [ref=e617]:
+                - button "$" [ref=e618] [cursor=pointer]
+                - button "%" [ref=e619] [cursor=pointer]
+            - spinbutton [ref=e620]: "5"
+            - paragraph [ref=e621]: Stop $5.00 below entry (2.70% move)
+          - generic [ref=e622]:
+            - paragraph [ref=e623]: Kelly Criterion
+            - generic [ref=e624]:
+              - generic [ref=e625]:
+                - generic [ref=e626]: Full Kelly
+                - generic [ref=e627]: 28.00%
+              - generic [ref=e628]:
+                - generic [ref=e629]: Half Kelly
+                - generic [ref=e630]: 14.00%
+          - generic [ref=e631]:
+            - paragraph [ref=e632]: Recommended Sizing
+            - generic [ref=e633]:
+              - generic [ref=e634]: Position Size
+              - generic [ref=e635]: 200 shares
+            - generic [ref=e636]:
+              - generic [ref=e637]: Dollar Risk
+              - generic [ref=e638]: $1.0K
+            - generic [ref=e639]:
+              - generic [ref=e640]: Max Position Value
+              - generic [ref=e641]: $37.0K
+            - generic [ref=e642]:
+              - generic [ref=e643]: Portfolio Weight
+              - generic [ref=e644]: 37.0%
+          - generic [ref=e645]:
+            - generic [ref=e646]:
+              - generic [ref=e647]: Portfolio Risk
+              - generic [ref=e648]: WITHIN LIMIT
+            - generic [ref=e653]:
+              - generic [ref=e654]: 0%
+              - generic [ref=e655]: 1%
+              - generic [ref=e656]: 2%
+              - generic [ref=e657]: 5%
+            - generic [ref=e659]: 1.00% at risk
+          - generic [ref=e660]:
+            - paragraph [ref=e661]: Policy Warning
+            - paragraph [ref=e662]: Position weight 37.0% exceeds 10% limit.
+      - generic [ref=e664]:
+        - generic [ref=e665]:
+          - img [ref=e666]
+          - generic [ref=e669]: ◈ AI Analysis
+        - generic [ref=e670]:
+          - img [ref=e671]
+          - generic [ref=e674]: No recommendation loaded
+          - generic [ref=e675]: Select a signal → AI Analyze
+  - generic [ref=e677]:
+    - generic [ref=e679]:
+      - img [ref=e680]
+      - generic [ref=e682]: ◈ Console
+      - generic [ref=e683]: 2 events
+      - button "Clear console" [ref=e684] [cursor=pointer]:
+        - img [ref=e685]
+      - 'button "Collapse console (Ctrl+`)" [ref=e688] [cursor=pointer]':
+        - img [ref=e689]
+    - generic [ref=e691]:
+      - generic [ref=e692]:
+        - generic [ref=e693]: 23:31:07.604
+        - generic [ref=e694]: "[INFO ]"
+        - generic [ref=e695]:
+          - generic [ref=e696]: "[SYSTEM]"
+          - text: TERM v1.0.0 — Trading Terminal initialized
+      - generic [ref=e697]:
+        - generic [ref=e698]: 23:31:07.604
+        - generic [ref=e699]: "[INFO ]"
+        - generic [ref=e700]:
+          - generic [ref=e701]: "[SYSTEM]"
+          - text: "Mode: PAPER — Risk engine: ACTIVE"
+      - generic [ref=e703]: █
+    - generic [ref=e704]:
+      - generic [ref=e705]: ">"
+      - textbox "Enter command..." [ref=e706]

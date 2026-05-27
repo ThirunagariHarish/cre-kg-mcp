@@ -43,3 +43,8 @@ testpaths = ["tests"]
 markers = [
     "integration: marks tests that require Docker (deselect with -m 'not integration')",
 ]
+
+[dependency-groups]
+dev = [
+    "bcrypt>=5.0.0",
+]

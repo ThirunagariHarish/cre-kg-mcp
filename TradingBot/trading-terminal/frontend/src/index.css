@@ -1,0 +1,296 @@
+/* ============================================================
+   Bloomberg Terminal — Global Styles
+   ============================================================ */
+
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Design Tokens
+   ============================================================ */
+
+:root {
+  --bg-root: #000000;
+  --bg-panel: #070707;
+  --bg-panel-raised: #0f0f0f;
+  --bg-panel-hover: #141414;
+  --border-subtle: #1e1e1e;
+  --border-active: #ff6600;
+  --border-muted: #141414;
+  --text-primary: #f0f0f0;
+  --text-secondary: #888888;
+  --text-muted: #444444;
+  --orange: #ff6600;
+  --positive: #00e676;
+  --negative: #ff1744;
+  --warning: #ffcc00;
+  --font-mono: 'IBM Plex Mono', 'JetBrains Mono', Consolas, monospace;
+  --font-ui: 'Inter', system-ui, sans-serif;
+}
+
+/* ============================================================
+   Base Resets
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  height: 100%;
+  overflow: hidden;
+  background-color: #000000;
+  color: #f0f0f0;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+   Scrollbar
+   ============================================================ */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1e1e1e transparent;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #252525; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #ff6600; }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* ============================================================
+   Selection & Focus
+   ============================================================ */
+
+::selection { background-color: rgba(255, 102, 0, 0.2); color: #f0f0f0; }
+:focus-visible { outline: 1px solid #ff6600; outline-offset: 1px; }
+
+/* ============================================================
+   Typography Utilities
+   ============================================================ */
+
+.font-mono { font-family: var(--font-mono) !important; }
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   Price Flash Animations
+   ============================================================ */
+
+@keyframes priceFlashUp {
+  0%   { background-color: rgba(0, 230, 118, 0.35); }
+  100% { background-color: transparent; }
+}
+@keyframes priceFlashDown {
+  0%   { background-color: rgba(255, 23, 68, 0.35); }
+  100% { background-color: transparent; }
+}
+.price-flash-up   { animation: priceFlashUp   0.8s ease-out; }
+.price-flash-down { animation: priceFlashDown 0.8s ease-out; }
+
+/* ============================================================
+   Ticker Tape
+   ============================================================ */
+
+@keyframes tickerScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-scroll         { animation: tickerScroll 55s linear infinite; }
+.ticker-scroll:hover   { animation-play-state: paused; }
+
+/* ============================================================
+   Skeleton Shimmer
+   ============================================================ */
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #080808 25%, #141414 50%, #080808 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ============================================================
+   Blinking Cursor
+   ============================================================ */
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.cursor-blink::after {
+  content: '█';
+  animation: blink 1s step-end infinite;
+  color: #ff6600;
+  font-size: 0.65rem;
+}
+
+/* ============================================================
+   Panel Header
+   ============================================================ */
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #070707;
+  border-bottom: 1px solid #1e1e1e;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #ff6600;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.panel-header--muted {
+  color: #555555;
+  border-bottom-color: #141414;
+}
+
+/* ============================================================
+   Data Table (Bloomberg Style)
+   ============================================================ */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+.data-table th {
+  text-align: right;
+  padding: 4px 6px;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #444444;
+  border-bottom: 1px solid #1a1a1a;
+  white-space: nowrap;
+  user-select: none;
+  background: #070707;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.data-table th:first-child { text-align: left; padding-left: 10px; }
+.data-table td {
+  text-align: right;
+  padding: 4px 6px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  border-bottom: 1px solid #111111;
+  color: #f0f0f0;
+  font-size: 0.7rem;
+}
+.data-table td:first-child { text-align: left; padding-left: 10px; }
+.data-table tr:hover td { background-color: #0f0f0f; }
+.data-table tr.selected td { background-color: rgba(255, 102, 0, 0.06); }
+
+/* ============================================================
+   Terminal Input
+   ============================================================ */
+
+.terminal-input {
+  background: #050505;
+  border: 1px solid #1e1e1e;
+  color: #f0f0f0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  outline: none;
+  width: 100%;
+  border-radius: 1px;
+  transition: border-color 100ms ease;
+}
+.terminal-input:focus {
+  border-color: #ff6600;
+  box-shadow: 0 0 0 1px rgba(255, 102, 0, 0.15);
+}
+.terminal-input::placeholder { color: #333333; }
+
+/* ============================================================
+   Resize Handle
+   ============================================================ */
+
+.resize-handle {
+  width: 3px;
+  background: #141414;
+  cursor: col-resize;
+  transition: background-color 100ms ease;
+  flex-shrink: 0;
+}
+.resize-handle:hover,
+.resize-handle.dragging { background: #ff6600; }
+
+/* ============================================================
+   Number Color Utilities
+   ============================================================ */
+
+.num-positive { color: #00e676; }
+.num-negative { color: #ff1744; }
+.num-neutral  { color: #f0f0f0; }
+.num-muted    { color: #888888; }
+.num-orange   { color: #ff6600; }
+
+/* ============================================================
+   Status Dots
+   ============================================================ */
+
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot--online  { background-color: #00e676; }
+.status-dot--offline { background-color: #ff1744; }
+.status-dot--warning { background-color: #ffcc00; }
+.status-dot--unknown { background-color: #444444; }
+
+/* ============================================================
+   Bloomberg Section Divider
+   ============================================================ */
+
+.bb-divider {
+  border: none;
+  border-top: 1px solid #1a1a1a;
+  margin: 0;
+}

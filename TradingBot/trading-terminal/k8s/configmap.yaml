@@ -1,0 +1,19 @@
+# Non-secret, k8s-topology-specific configuration.
+# True secrets (ALPACA_API_KEY, ANTHROPIC_API_KEY, SECRET_KEY, DISCORD_TOKEN)
+# are injected by the Doppler operator via terminal-secrets.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: terminal-config
+  namespace: trading-terminal
+data:
+  ENVIRONMENT: "production"
+  DEBUG: "false"
+  WORKERS: "1"
+  POSTGRES_URL: "postgresql+asyncpg://trading:trading@trading-terminal-postgres:5432/trading_terminal"
+  REDIS_URL: "redis://trading-terminal-redis:6379/0"
+  KAFKA_BOOTSTRAP_SERVERS: "trading-terminal-kafka:9092"
+  CORS_ORIGINS: "http://localhost:30173,http://trading-terminal-frontend"
+  DASHBOARD_USERNAME: "harishkumart1994"
+  POSTGRES_POOL_SIZE: "10"
+  POSTGRES_MAX_OVERFLOW: "20"

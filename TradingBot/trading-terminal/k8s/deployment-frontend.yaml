@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trading-terminal-frontend
+  namespace: trading-terminal
+  labels:
+    app: trading-terminal-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trading-terminal-frontend
+  template:
+    metadata:
+      labels:
+        app: trading-terminal-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: localhost:5111/trading-terminal-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trading-terminal-frontend
+  namespace: trading-terminal
+spec:
+  selector:
+    app: trading-terminal-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      nodePort: 30173
+  type: NodePort

@@ -1,0 +1,616 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - img
+            - generic: TERM
+          - generic:
+            - generic: PAPER
+          - generic:
+            - generic: SPX
+            - generic: 5,234.18
+            - generic: +0.34%
+          - generic:
+            - generic: NDX
+            - generic: 18,421.30
+            - generic: +0.67%
+          - generic:
+            - generic: DJI
+            - generic: 38,891.54
+            - generic: "-0.12%"
+          - generic:
+            - generic: VIX
+            - generic: "14.23"
+            - generic: "-4.37%"
+          - button:
+            - img
+            - generic: Search symbols, commands...
+            - generic: ⌘K
+          - generic:
+            - generic: OPEN
+          - generic:
+            - generic: 11:13:38
+            - generic: ET
+          - button:
+            - img
+          - button:
+            - img
+        - generic:
+          - generic:
+            - generic:
+              - generic: AAPL
+              - generic: "178.32"
+              - generic: ▲ +1.23 (+0.69%)
+            - generic:
+              - generic: NVDA
+              - generic: "891.50"
+              - generic: ▲ +12.34 (+1.40%)
+            - generic:
+              - generic: TSLA
+              - generic: "201.12"
+              - generic: ▼ -3.45 (-1.69%)
+            - generic:
+              - generic: MSFT
+              - generic: "416.78"
+              - generic: ▲ +2.12 (+0.51%)
+            - generic:
+              - generic: AMD
+              - generic: "178.92"
+              - generic: ▼ -1.23 (-0.68%)
+            - generic:
+              - generic: META
+              - generic: "503.12"
+              - generic: ▲ +8.45 (+1.71%)
+            - generic:
+              - generic: GOOGL
+              - generic: "154.32"
+              - generic: ▲ +0.87 (+0.57%)
+            - generic:
+              - generic: AMZN
+              - generic: "182.91"
+              - generic: ▲ +3.21 (+1.79%)
+            - generic:
+              - generic: SPY
+              - generic: "523.40"
+              - generic: ▲ +1.75 (+0.34%)
+            - generic:
+              - generic: QQQ
+              - generic: "448.90"
+              - generic: ▲ +2.98 (+0.67%)
+            - generic:
+              - generic: BRK.B
+              - generic: "403.55"
+              - generic: ▼ -0.88 (-0.22%)
+            - generic:
+              - generic: JPM
+              - generic: "196.72"
+              - generic: ▲ +1.45 (+0.74%)
+            - generic:
+              - generic: GS
+              - generic: "454.12"
+              - generic: ▼ -2.34 (-0.51%)
+            - generic:
+              - generic: COIN
+              - generic: "238.44"
+              - generic: ▲ +11.23 (+4.94%)
+            - generic:
+              - generic: PLTR
+              - generic: "24.87"
+              - generic: ▲ +0.43 (+1.76%)
+            - generic:
+              - generic: AAPL
+              - generic: "178.32"
+              - generic: ▲ +1.23 (+0.69%)
+            - generic:
+              - generic: NVDA
+              - generic: "891.50"
+              - generic: ▲ +12.34 (+1.40%)
+            - generic:
+              - generic: TSLA
+              - generic: "201.12"
+              - generic: ▼ -3.45 (-1.69%)
+            - generic:
+              - generic: MSFT
+              - generic: "416.78"
+              - generic: ▲ +2.12 (+0.51%)
+            - generic:
+              - generic: AMD
+              - generic: "178.92"
+              - generic: ▼ -1.23 (-0.68%)
+            - generic:
+              - generic: META
+              - generic: "503.12"
+              - generic: ▲ +8.45 (+1.71%)
+            - generic:
+              - generic: GOOGL
+              - generic: "154.32"
+              - generic: ▲ +0.87 (+0.57%)
+            - generic:
+              - generic: AMZN
+              - generic: "182.91"
+              - generic: ▲ +3.21 (+1.79%)
+            - generic:
+              - generic: SPY
+              - generic: "523.40"
+              - generic: ▲ +1.75 (+0.34%)
+            - generic:
+              - generic: QQQ
+              - generic: "448.90"
+              - generic: ▲ +2.98 (+0.67%)
+            - generic:
+              - generic: BRK.B
+              - generic: "403.55"
+              - generic: ▼ -0.88 (-0.22%)
+            - generic:
+              - generic: JPM
+              - generic: "196.72"
+              - generic: ▲ +1.45 (+0.74%)
+            - generic:
+              - generic: GS
+              - generic: "454.12"
+              - generic: ▼ -2.34 (-0.51%)
+            - generic:
+              - generic: COIN
+              - generic: "238.44"
+              - generic: ▲ +11.23 (+4.94%)
+            - generic:
+              - generic: PLTR
+              - generic: "24.87"
+              - generic: ▲ +0.43 (+1.76%)
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic: ◈ Watchlist
+                - generic: "10"
+                - button:
+                  - img
+              - generic:
+                - img
+                - textbox:
+                  - /placeholder: Filter...
+              - generic:
+                - generic: Symbol
+                - generic: Last
+                - generic: "%Chg"
+              - generic:
+                - generic:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: Tech
+                    - generic: "8"
+                  - generic:
+                    - generic:
+                      - generic: ▲
+                    - generic:
+                      - text: AAPL
+                      - paragraph: Apple Inc.
+                    - generic: "179.02"
+                    - generic:
+                      - generic: +1.09%
+                    - button:
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: ▲
+                    - generic:
+                      - text: NVDA
+                      - paragraph: NVIDIA Corp.
+                    - generic: "895.76"
+                    - generic:
+                      - generic: +1.89%
+                    - button:
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: ▼
+                    - generic:
+                      - text: TSLA
+                      - paragraph: Tesla Inc.
+                    - generic: "200.47"
+                    - generic:
+                      - generic: "-2.00%"
+                    - button:
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: ▲
+                    - generic:
+                      - text: MSFT
+                      - paragraph: Microsoft Corp.
+                    - generic: "415.48"
+                    - generic:
+                      - generic: +0.20%
+                    - button:
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: ▼
+                    - generic:
+                      - text: AMD
+                      - paragraph: Adv. Micro Dev.
+                    - generic: "178.54"
+                    - generic:
+                      - generic: "-0.89%"
+                    - button:
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: ▲
+                    - generic:
+                      - text: META
+                      - paragraph: Meta Platforms
+                    - generic: "503.32"
+                    - generic:
+                      - generic: +1.75%
+                    - button:
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: ▲
+                    - generic:
+                      - text: GOOGL
+                      - paragraph: Alphabet Inc.
+                    - generic: "154.79"
+                    - generic:
+                      - generic: +0.87%
+                    - button:
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: ▲
+                    - generic:
+                      - text: AMZN
+                      - paragraph: Amazon.com Inc.
+                    - generic: "183.15"
+                    - generic:
+                      - generic: +1.92%
+                    - button:
+                      - img
+                - generic:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: ETFs
+                    - generic: "2"
+                  - generic:
+                    - generic:
+                      - generic: ▲
+                    - generic:
+                      - text: SPY
+                      - paragraph: SPDR S&P 500 ETF
+                    - generic: "524.71"
+                    - generic:
+                      - generic: +0.59%
+                    - button:
+                      - img
+                  - generic:
+                    - generic:
+                      - generic: ▲
+                    - generic:
+                      - text: QQQ
+                      - paragraph: Invesco QQQ Trust
+                    - generic: "447.93"
+                    - generic:
+                      - generic: +0.45%
+                    - button:
+                      - img
+          - generic:
+            - generic:
+              - generic:
+                - button:
+                  - text: Positions
+                  - generic: "5"
+                - button:
+                  - text: Agents
+                  - generic: "23"
+                - button:
+                  - text: Orders
+                  - generic: "6"
+                - button:
+                  - text: Signals
+                  - generic: "5"
+              - generic:
+                - generic:
+                  - generic:
+                    - generic: ◈ Signal Feed
+                    - generic: 5 signals
+                  - generic:
+                    - button: BUY
+                    - button: SELL
+                    - button: HOLD
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: DISCORD
+                        - generic: NVDA
+                        - generic:
+                          - img
+                          - text: BUY
+                        - generic: 87%
+                        - generic: 3 minutes ago
+                        - button:
+                          - img
+                      - generic:
+                        - paragraph: NVDA breaking out above $890 resistance, strong momentum. Target $920, stop $875.
+                      - generic:
+                        - generic: PENDING
+                        - button:
+                          - img
+                        - button:
+                          - img
+                          - text: AI
+                        - button:
+                          - img
+                          - text: EXECUTE
+                    - generic:
+                      - generic: AI
+                      - generic: SELL
+                      - generic: TSLA
+                      - generic: TSLA weakening — failed to hold $205 support twice. Risk off
+                      - generic: 74%
+                    - generic:
+                      - generic: TELE
+                      - generic: HOLD
+                      - generic: AAPL
+                      - generic: AAPL consolidating near ATH. Wait for breakout above $180 be
+                      - generic: 61%
+                    - generic:
+                      - generic: ALGO
+                      - generic: BUY
+                      - generic: META
+                      - generic: "META: Momentum signal triggered. ADX > 25, MACD cross up, vo"
+                      - generic: 92%
+                    - generic:
+                      - generic: NEWS
+                      - generic: WATCH
+                      - generic: AMD
+                      - generic: AMD CEO interview indicates strong AI accelerator demand. Wa
+                      - generic: 55%
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic: ◈ Order Entry
+                    - generic: AAPL
+                  - generic:
+                    - generic:
+                      - generic: Symbol
+                      - textbox:
+                        - /placeholder: AAPL
+                        - text: AAPL
+                    - generic:
+                      - generic: Side
+                      - generic:
+                        - button: ▲ BUY
+                        - button: ▼ SELL
+                    - generic:
+                      - generic: Quantity
+                      - spinbutton
+                    - generic:
+                      - generic: Order Type
+                      - generic:
+                        - button: MARKET
+                        - button: LIMIT
+                        - button: STOP
+                        - button: STOP_LIMIT
+                    - generic:
+                      - generic: Time in Force
+                      - generic:
+                        - button: DAY
+                        - button: GTC
+                        - button: IOC
+                        - button: FOK
+                  - generic:
+                    - paragraph: Risk Preview
+                    - generic:
+                      - generic:
+                        - generic: Est. Value
+                        - generic: $17,902
+                      - generic:
+                        - generic: "% Portfolio"
+                        - generic: 17.9%
+                      - generic:
+                        - generic: Max Loss
+                        - generic: $358
+                      - generic:
+                        - generic: R/R
+                        - generic: 2.5x
+                      - generic:
+                        - generic: Cash Avail.
+                        - generic: $35,157
+                  - generic:
+                    - button: CLR
+                    - button: BUY AAPL ↵
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: ◈ Risk Metrics
+                    - generic: CLEAR
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: Daily Loss
+                        - generic: 11.6%
+                    - generic:
+                      - generic:
+                        - generic: Exposure
+                        - generic: 64.8%
+                  - generic:
+                    - generic:
+                      - generic: Total Exposure
+                      - generic: $64.8K
+                    - generic:
+                      - generic: Net Exposure
+                      - generic: $58.8K
+                    - generic:
+                      - generic: Daily P&L
+                      - generic: $578.55
+                    - generic:
+                      - generic: Max Drawdown
+                      - generic: 1.24%
+                    - generic:
+                      - generic: Open Positions
+                      - generic: "5"
+                  - generic:
+                    - paragraph: Policy Limits
+                    - generic:
+                      - generic: Max Position
+                      - generic: 15% / $50.0K
+                    - generic:
+                      - generic: Daily Loss Limit
+                      - generic: $5.0K
+                    - generic:
+                      - generic: Max Drawdown
+                      - generic: 5%
+                    - generic:
+                      - generic: Max Order Value
+                      - generic: $25.0K
+                  - generic:
+                    - button:
+                      - img
+                      - text: KILL SWITCH
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic: ◈ AI Analysis
+                    - generic: NVDA
+                  - generic:
+                    - img
+                    - generic:
+                      - generic:
+                        - generic: NVDA
+                        - generic: ▲ BUY
+                        - generic:
+                          - img
+                          - text: BULLISH
+                      - generic:
+                        - generic: Confidence
+                        - generic: 87%
+                  - generic:
+                    - paragraph: NVDA shows strong momentum with improving technicals. Signal source confirms bullish breakout. Risk/reward favorable for a long position with defined stop.
+                  - generic:
+                    - paragraph: Key Factors
+                    - generic:
+                      - generic:
+                        - generic: +
+                        - generic: Price momentum above 20-day MA
+                      - generic:
+                        - generic: +
+                        - generic: Volume confirming breakout
+                      - generic:
+                        - generic: +
+                        - generic: Options flow bullish
+                      - generic:
+                        - generic: +
+                        - generic: Sector strength
+                  - generic:
+                    - paragraph: Risks
+                    - generic:
+                      - generic:
+                        - generic: −
+                        - generic: Broader market weakness
+                      - generic:
+                        - generic: −
+                        - generic: Overhead resistance
+                      - generic:
+                        - generic: −
+                        - generic: Earnings uncertainty
+                  - generic:
+                    - generic:
+                      - img
+                      - paragraph: AI ADVISORY ONLY — NOT FINANCIAL ADVICE. Past performance does not guarantee future results.
+                  - generic:
+                    - generic:
+                      - generic: claude-sonnet-4-6 · less than a minute ago
+        - generic:
+          - generic:
+            - generic:
+              - img
+              - generic: ◈ Console
+              - generic: 2 events
+              - button:
+                - img
+              - button:
+                - img
+            - generic:
+              - generic:
+                - generic: 11:12:45.576
+                - generic: "[INFO ]"
+                - generic:
+                  - generic: "[SYSTEM]"
+                  - text: TERM v1.0.0 — Trading Terminal initialized
+              - generic:
+                - generic: 11:12:45.576
+                - generic: "[INFO ]"
+                - generic:
+                  - generic: "[SYSTEM]"
+                  - text: "Mode: PAPER — Risk engine: ACTIVE"
+              - generic:
+                - generic: █
+            - generic:
+              - generic: ">"
+              - textbox:
+                - /placeholder: Enter command...
+  - dialog "Command Palette" [ref=e725]:
+    - heading "Command Palette" [level=2] [ref=e726]
+    - generic [ref=e727]:
+      - img [ref=e728]
+      - textbox "Search symbols, commands, pages..." [active] [ref=e731]
+      - generic [ref=e732]: ESC
+    - generic [ref=e733]:
+      - generic [ref=e734]:
+        - generic [ref=e735]: Navigation
+        - generic [ref=e736] [cursor=pointer]:
+          - img [ref=e738]
+          - generic [ref=e742]:
+            - generic [ref=e743]: View Positions
+            - generic [ref=e744]: — Open positions and P&L
+          - generic [ref=e745]: G P
+          - img [ref=e746]
+        - generic [ref=e748] [cursor=pointer]:
+          - img [ref=e750]
+          - generic [ref=e754]:
+            - generic [ref=e755]: View Agents
+            - generic [ref=e756]: — Trading agent status
+          - generic [ref=e757]: G A
+        - generic [ref=e758] [cursor=pointer]:
+          - img [ref=e760]
+          - generic [ref=e764]:
+            - generic [ref=e765]: View Signals
+            - generic [ref=e766]: — Signal feed and analysis
+          - generic [ref=e767]: G S
+        - generic [ref=e768] [cursor=pointer]:
+          - img [ref=e770]
+          - generic [ref=e774]:
+            - generic [ref=e775]: View Orders
+            - generic [ref=e776]: — Order blotter history
+          - generic [ref=e777]: G O
+      - generic [ref=e778]:
+        - generic [ref=e779]: Risk
+        - generic [ref=e780] [cursor=pointer]:
+          - img [ref=e782]
+          - generic [ref=e785]:
+            - generic [ref=e786]: Risk Status
+            - generic [ref=e787]: — View current risk metrics
+        - generic [ref=e788] [cursor=pointer]:
+          - img [ref=e790]
+          - generic [ref=e793]:
+            - generic [ref=e794]: Kill Switch
+            - generic [ref=e795]: — Emergency trading halt
+    - generic [ref=e796]:
+      - generic [ref=e797]:
+        - generic [ref=e798]: ↑↓
+        - text: Navigate
+      - generic [ref=e799]:
+        - generic [ref=e800]: ↵
+        - text: Select
+      - generic [ref=e801]:
+        - generic [ref=e802]: Esc
+        - text: Close

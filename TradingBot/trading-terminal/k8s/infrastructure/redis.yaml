@@ -1,0 +1,53 @@
+# Redis for trading-terminal — in-memory only (no persistence needed).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trading-terminal-redis
+  namespace: trading-terminal
+  labels:
+    app: trading-terminal-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trading-terminal-redis
+  template:
+    metadata:
+      labels:
+        app: trading-terminal-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+          command: ["redis-server", "--save", "", "--appendonly", "no"]
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trading-terminal-redis
+  namespace: trading-terminal
+spec:
+  selector:
+    app: trading-terminal-redis
+  ports:
+    - port: 6379
+      targetPort: 6379

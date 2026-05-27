@@ -1,0 +1,82 @@
+# PostgreSQL for trading-terminal.
+# Credentials match the default in backend/core/config.py (user: trading, password: trading, db: trading_terminal).
+# POSTGRES_URL is set in configmap.yaml pointing to this service.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trading-terminal-postgres
+  namespace: trading-terminal
+  labels:
+    app: trading-terminal-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trading-terminal-postgres
+  template:
+    metadata:
+      labels:
+        app: trading-terminal-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: trading
+            - name: POSTGRES_DB
+              value: trading_terminal
+            - name: POSTGRES_PASSWORD
+              value: trading
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "trading", "-d", "trading_terminal"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "trading", "-d", "trading_terminal"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: trading-terminal-postgres-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: trading-terminal-postgres-pvc
+  namespace: trading-terminal
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trading-terminal-postgres
+  namespace: trading-terminal
+spec:
+  selector:
+    app: trading-terminal-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

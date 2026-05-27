@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: trading-terminal
+
+resources:
+  - namespace.yaml
+  - doppler-secret.yaml
+  - configmap.yaml
+  - infrastructure/postgres.yaml
+  - infrastructure/redis.yaml
+  - deployment-backend.yaml
+  - deployment-frontend.yaml

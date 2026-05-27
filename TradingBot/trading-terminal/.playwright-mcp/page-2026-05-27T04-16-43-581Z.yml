@@ -1,0 +1,686 @@
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - img [ref=e7]
+        - generic [ref=e9]: TERM
+      - generic [ref=e11]: PAPER
+      - generic [ref=e12]:
+        - generic [ref=e13]: SPX
+        - generic [ref=e14]: 5,234.18
+        - generic [ref=e15]: +0.34%
+      - generic [ref=e16]:
+        - generic [ref=e17]: NDX
+        - generic [ref=e18]: 18,421.30
+        - generic [ref=e19]: +0.67%
+      - generic [ref=e20]:
+        - generic [ref=e21]: DJI
+        - generic [ref=e22]: 38,891.54
+        - generic [ref=e23]: "-0.12%"
+      - generic [ref=e24]:
+        - generic [ref=e25]: VIX
+        - generic [ref=e26]: "14.23"
+        - generic [ref=e27]: "-4.37%"
+      - button "Search symbols, commands... ⌘K" [ref=e28] [cursor=pointer]:
+        - img [ref=e29]
+        - generic [ref=e32]: Search symbols, commands...
+        - generic [ref=e33]: ⌘K
+      - generic [ref=e35]:
+        - generic [ref=e36]: ◆
+        - generic [ref=e37]: BULL QUIET
+        - generic [ref=e38]: 72%
+      - generic [ref=e41]: OPEN
+      - generic [ref=e42]:
+        - 'generic "API: online" [ref=e43]'
+        - 'generic "WS: online" [ref=e45]'
+        - 'generic "MKT: online" [ref=e47]'
+        - 'generic "RISK: warning" [ref=e49]'
+      - generic [ref=e51]:
+        - generic [ref=e52]: 23:16:42
+        - generic [ref=e53]: ET
+      - button "0 alerts" [ref=e54] [cursor=pointer]:
+        - img [ref=e55]
+      - button "Settings" [ref=e58] [cursor=pointer]:
+        - img [ref=e59]
+    - generic [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e65]: AAPL
+        - generic [ref=e66]: "178.32"
+        - generic [ref=e67]: ▲ +1.23 (+0.69%)
+      - generic [ref=e68]:
+        - generic [ref=e69]: NVDA
+        - generic [ref=e70]: "891.50"
+        - generic [ref=e71]: ▲ +12.34 (+1.40%)
+      - generic [ref=e72]:
+        - generic [ref=e73]: TSLA
+        - generic [ref=e74]: "201.12"
+        - generic [ref=e75]: ▼ -3.45 (-1.69%)
+      - generic [ref=e76]:
+        - generic [ref=e77]: MSFT
+        - generic [ref=e78]: "416.78"
+        - generic [ref=e79]: ▲ +2.12 (+0.51%)
+      - generic [ref=e80]:
+        - generic [ref=e81]: AMD
+        - generic [ref=e82]: "178.92"
+        - generic [ref=e83]: ▼ -1.23 (-0.68%)
+      - generic [ref=e84]:
+        - generic [ref=e85]: META
+        - generic [ref=e86]: "503.12"
+        - generic [ref=e87]: ▲ +8.45 (+1.71%)
+      - generic [ref=e88]:
+        - generic [ref=e89]: GOOGL
+        - generic [ref=e90]: "154.32"
+        - generic [ref=e91]: ▲ +0.87 (+0.57%)
+      - generic [ref=e92]:
+        - generic [ref=e93]: AMZN
+        - generic [ref=e94]: "182.91"
+        - generic [ref=e95]: ▲ +3.21 (+1.79%)
+      - generic [ref=e96]:
+        - generic [ref=e97]: SPY
+        - generic [ref=e98]: "523.40"
+        - generic [ref=e99]: ▲ +1.75 (+0.34%)
+      - generic [ref=e100]:
+        - generic [ref=e101]: QQQ
+        - generic [ref=e102]: "448.90"
+        - generic [ref=e103]: ▲ +2.98 (+0.67%)
+      - generic [ref=e104]:
+        - generic [ref=e105]: BRK.B
+        - generic [ref=e106]: "403.55"
+        - generic [ref=e107]: ▼ -0.88 (-0.22%)
+      - generic [ref=e108]:
+        - generic [ref=e109]: JPM
+        - generic [ref=e110]: "196.72"
+        - generic [ref=e111]: ▲ +1.45 (+0.74%)
+      - generic [ref=e112]:
+        - generic [ref=e113]: GS
+        - generic [ref=e114]: "454.12"
+        - generic [ref=e115]: ▼ -2.34 (-0.51%)
+      - generic [ref=e116]:
+        - generic [ref=e117]: COIN
+        - generic [ref=e118]: "238.44"
+        - generic [ref=e119]: ▲ +11.23 (+4.94%)
+      - generic [ref=e120]:
+        - generic [ref=e121]: PLTR
+        - generic [ref=e122]: "24.87"
+        - generic [ref=e123]: ▲ +0.43 (+1.76%)
+      - generic [ref=e124]:
+        - generic [ref=e125]: AAPL
+        - generic [ref=e126]: "178.32"
+        - generic [ref=e127]: ▲ +1.23 (+0.69%)
+      - generic [ref=e128]:
+        - generic [ref=e129]: NVDA
+        - generic [ref=e130]: "891.50"
+        - generic [ref=e131]: ▲ +12.34 (+1.40%)
+      - generic [ref=e132]:
+        - generic [ref=e133]: TSLA
+        - generic [ref=e134]: "201.12"
+        - generic [ref=e135]: ▼ -3.45 (-1.69%)
+      - generic [ref=e136]:
+        - generic [ref=e137]: MSFT
+        - generic [ref=e138]: "416.78"
+        - generic [ref=e139]: ▲ +2.12 (+0.51%)
+      - generic [ref=e140]:
+        - generic [ref=e141]: AMD
+        - generic [ref=e142]: "178.92"
+        - generic [ref=e143]: ▼ -1.23 (-0.68%)
+      - generic [ref=e144]:
+        - generic [ref=e145]: META
+        - generic [ref=e146]: "503.12"
+        - generic [ref=e147]: ▲ +8.45 (+1.71%)
+      - generic [ref=e148]:
+        - generic [ref=e149]: GOOGL
+        - generic [ref=e150]: "154.32"
+        - generic [ref=e151]: ▲ +0.87 (+0.57%)
+      - generic [ref=e152]:
+        - generic [ref=e153]: AMZN
+        - generic [ref=e154]: "182.91"
+        - generic [ref=e155]: ▲ +3.21 (+1.79%)
+      - generic [ref=e156]:
+        - generic [ref=e157]: SPY
+        - generic [ref=e158]: "523.40"
+        - generic [ref=e159]: ▲ +1.75 (+0.34%)
+      - generic [ref=e160]:
+        - generic [ref=e161]: QQQ
+        - generic [ref=e162]: "448.90"
+        - generic [ref=e163]: ▲ +2.98 (+0.67%)
+      - generic [ref=e164]:
+        - generic [ref=e165]: BRK.B
+        - generic [ref=e166]: "403.55"
+        - generic [ref=e167]: ▼ -0.88 (-0.22%)
+      - generic [ref=e168]:
+        - generic [ref=e169]: JPM
+        - generic [ref=e170]: "196.72"
+        - generic [ref=e171]: ▲ +1.45 (+0.74%)
+      - generic [ref=e172]:
+        - generic [ref=e173]: GS
+        - generic [ref=e174]: "454.12"
+        - generic [ref=e175]: ▼ -2.34 (-0.51%)
+      - generic [ref=e176]:
+        - generic [ref=e177]: COIN
+        - generic [ref=e178]: "238.44"
+        - generic [ref=e179]: ▲ +11.23 (+4.94%)
+      - generic [ref=e180]:
+        - generic [ref=e181]: PLTR
+        - generic [ref=e182]: "24.87"
+        - generic [ref=e183]: ▲ +0.43 (+1.76%)
+    - generic [ref=e184]:
+      - generic [ref=e186]:
+        - generic [ref=e187]:
+          - generic [ref=e188]: ◈ Watchlist
+          - generic [ref=e189]: "10"
+          - button "Add symbol" [ref=e190] [cursor=pointer]:
+            - img [ref=e191]
+        - generic [ref=e192]:
+          - img [ref=e193]
+          - textbox "Filter..." [ref=e196]
+        - generic [ref=e197]:
+          - generic [ref=e198]: Symbol
+          - generic [ref=e199]: Last
+          - generic [ref=e200]: "%Chg"
+        - generic [ref=e201]:
+          - generic [ref=e202]:
+            - button "Tech 8" [ref=e203] [cursor=pointer]:
+              - img [ref=e205]
+              - generic [ref=e207]: Tech
+              - generic [ref=e208]: "8"
+            - generic [ref=e209] [cursor=pointer]:
+              - generic [ref=e212]: ▲
+              - generic [ref=e213]:
+                - text: AAPL
+                - paragraph [ref=e214]: Apple Inc.
+              - generic [ref=e215]: "178.93"
+              - generic [ref=e217]: +1.04%
+              - button [ref=e218]:
+                - img [ref=e219]
+            - generic [ref=e222] [cursor=pointer]:
+              - generic [ref=e225]: ▲
+              - generic [ref=e226]:
+                - text: NVDA
+                - paragraph [ref=e227]: NVIDIA Corp.
+              - generic [ref=e228]: "890.10"
+              - generic [ref=e230]: +1.24%
+              - button [ref=e231]:
+                - img [ref=e232]
+            - generic [ref=e235] [cursor=pointer]:
+              - generic [ref=e238]: ▼
+              - generic [ref=e239]:
+                - text: TSLA
+                - paragraph [ref=e240]: Tesla Inc.
+              - generic [ref=e241]: "201.16"
+              - generic [ref=e243]: "-1.67%"
+              - button [ref=e244]:
+                - img [ref=e245]
+            - generic [ref=e248] [cursor=pointer]:
+              - generic [ref=e251]: ▲
+              - generic [ref=e252]:
+                - text: MSFT
+                - paragraph [ref=e253]: Microsoft Corp.
+              - generic [ref=e254]: "417.09"
+              - generic [ref=e256]: +0.59%
+              - button [ref=e257]:
+                - img [ref=e258]
+            - generic [ref=e261] [cursor=pointer]:
+              - generic [ref=e264]: ▼
+              - generic [ref=e265]:
+                - text: AMD
+                - paragraph [ref=e266]: Adv. Micro Dev.
+              - generic [ref=e267]: "178.67"
+              - generic [ref=e269]: "-0.82%"
+              - button [ref=e270]:
+                - img [ref=e271]
+            - generic [ref=e274] [cursor=pointer]:
+              - generic [ref=e277]: ▲
+              - generic [ref=e278]:
+                - text: META
+                - paragraph [ref=e279]: Meta Platforms
+              - generic [ref=e280]: "502.92"
+              - generic [ref=e282]: +1.67%
+              - button [ref=e283]:
+                - img [ref=e284]
+            - generic [ref=e287] [cursor=pointer]:
+              - generic [ref=e290]: ▲
+              - generic [ref=e291]:
+                - text: GOOGL
+                - paragraph [ref=e292]: Alphabet Inc.
+              - generic [ref=e293]: "154.45"
+              - generic [ref=e295]: +0.65%
+              - button [ref=e296]:
+                - img [ref=e297]
+            - generic [ref=e300] [cursor=pointer]:
+              - generic [ref=e303]: ▲
+              - generic [ref=e304]:
+                - text: AMZN
+                - paragraph [ref=e305]: Amazon.com Inc.
+              - generic [ref=e306]: "183.30"
+              - generic [ref=e308]: +2.00%
+              - button [ref=e309]:
+                - img [ref=e310]
+          - generic [ref=e313]:
+            - button "ETFs 2" [ref=e314] [cursor=pointer]:
+              - img [ref=e316]
+              - generic [ref=e318]: ETFs
+              - generic [ref=e319]: "2"
+            - generic [ref=e320] [cursor=pointer]:
+              - generic [ref=e323]: ▲
+              - generic [ref=e324]:
+                - text: SPY
+                - paragraph [ref=e325]: SPDR S&P 500 ETF
+              - generic [ref=e326]: "523.62"
+              - generic [ref=e328]: +0.38%
+              - button [ref=e329]:
+                - img [ref=e330]
+            - generic [ref=e333] [cursor=pointer]:
+              - generic [ref=e336]: ▲
+              - generic [ref=e337]:
+                - text: QQQ
+                - paragraph [ref=e338]: Invesco QQQ Trust
+              - generic [ref=e339]: "449.95"
+              - generic [ref=e341]: +0.90%
+              - button [ref=e342]:
+                - img [ref=e343]
+      - generic [ref=e348]:
+        - generic [ref=e349]:
+          - button "Positions 5" [ref=e350] [cursor=pointer]:
+            - generic [ref=e351]: Positions
+            - generic [ref=e352]: "5"
+          - button "Agents 23" [ref=e353] [cursor=pointer]:
+            - generic [ref=e354]: Agents
+            - generic [ref=e355]: "23"
+          - button "Orders 6" [ref=e356] [cursor=pointer]:
+            - generic [ref=e357]: Orders
+            - generic [ref=e358]: "6"
+          - button "Signals 5" [ref=e359] [cursor=pointer]:
+            - generic [ref=e360]: Signals
+            - generic [ref=e361]: "5"
+          - button "Chart" [ref=e362] [cursor=pointer]:
+            - generic [ref=e363]: Chart
+          - button "Analytics" [active] [ref=e364] [cursor=pointer]:
+            - generic [ref=e365]: Analytics
+          - button "Intelligence" [ref=e366] [cursor=pointer]:
+            - generic [ref=e367]: Intelligence
+        - generic [ref=e706]:
+          - generic [ref=e708]:
+            - generic [ref=e709]:
+              - generic [ref=e710]: ◈ EQUITY CURVE
+              - generic [ref=e711]: +$11,695.84
+              - generic [ref=e712]:
+                - button "1D" [ref=e713] [cursor=pointer]
+                - button "1W" [ref=e714] [cursor=pointer]
+                - button "1M" [ref=e715] [cursor=pointer]
+                - button "3M" [ref=e716] [cursor=pointer]
+                - button "ALL" [ref=e717] [cursor=pointer]
+                - button "SPY" [ref=e718] [cursor=pointer]
+            - img [ref=e722]:
+              - generic [ref=e726]:
+                - generic [ref=e728]: Feb 25
+                - generic [ref=e730]: Mar 10
+                - generic [ref=e732]: Mar 23
+                - generic [ref=e734]: Apr 4
+                - generic [ref=e736]: Apr 16
+                - generic [ref=e738]: Apr 29
+                - generic [ref=e740]: May 12
+                - generic [ref=e742]: May 26
+              - generic [ref=e744]:
+                - generic [ref=e746]: +$0k
+                - generic [ref=e748]: +$6k
+                - generic [ref=e750]: +$12k
+            - generic [ref=e757]:
+              - generic [ref=e758]:
+                - generic [ref=e759]: Total Return
+                - generic [ref=e760]: +3828.9%
+              - generic [ref=e761]:
+                - generic [ref=e762]: Sharpe Ratio
+                - generic [ref=e763]: "17.70"
+              - generic [ref=e764]:
+                - generic [ref=e765]: Max Drawdown
+                - generic [ref=e766]: "-4.3%"
+              - generic [ref=e767]:
+                - generic [ref=e768]: Win Rate
+                - generic [ref=e769]: 82.4%
+          - generic [ref=e771]:
+            - generic [ref=e772]:
+              - generic [ref=e773]: ◈ DRAWDOWN ANALYSIS
+              - generic [ref=e774]: ◆ AT HIGH WATERMARK
+            - img [ref=e778]:
+              - generic [ref=e782]:
+                - generic [ref=e784]: Mar 4
+                - generic [ref=e786]: Mar 30
+                - generic [ref=e788]: Apr 26
+                - generic [ref=e790]: May 26
+              - generic [ref=e792]:
+                - generic [ref=e794]: "-6%"
+                - generic [ref=e796]: 1%
+            - generic [ref=e803]:
+              - generic [ref=e804]:
+                - generic [ref=e805]: Max Drawdown
+                - generic [ref=e806]: "-8.2%"
+              - generic [ref=e807]:
+                - generic [ref=e808]: Current DD
+                - generic [ref=e809]: 0.00%
+                - generic [ref=e810]: High watermark
+              - generic [ref=e811]:
+                - generic [ref=e812]: Recovery Time
+                - generic [ref=e813]: N/A
+              - generic [ref=e814]:
+                - generic [ref=e815]: Avg Duration
+                - generic [ref=e816]: 2d
+          - generic [ref=e818]:
+            - generic [ref=e819]:
+              - generic [ref=e820]: ◈ PERFORMANCE METRICS
+              - generic [ref=e821]:
+                - button "TODAY" [ref=e822] [cursor=pointer]
+                - button "7D" [ref=e823] [cursor=pointer]
+                - button "30D" [ref=e824] [cursor=pointer]
+                - button "ALL" [ref=e825] [cursor=pointer]
+            - generic [ref=e827]:
+              - generic [ref=e828]:
+                - generic [ref=e830]: Win Rate
+                - generic [ref=e831]:
+                  - generic [ref=e832]: 68.4%
+                  - img [ref=e836]:
+                    - generic [ref=e837]:
+                      - img [ref=e839]
+                      - img [ref=e841]
+                - generic [ref=e842]: 13W / 6L
+              - generic [ref=e843]:
+                - generic [ref=e844]:
+                  - generic [ref=e845]: Profit Factor
+                  - generic [ref=e846]: STRONG
+                - generic [ref=e848]: "2.14"
+                - generic [ref=e849]: Total gains / losses
+              - generic [ref=e850]:
+                - generic [ref=e851]:
+                  - generic [ref=e852]: Sharpe Ratio
+                  - generic [ref=e853]: GOOD
+                - generic [ref=e855]: "1.87"
+                - generic [ref=e856]: Annualized risk-adj. return
+              - generic [ref=e857]:
+                - generic [ref=e859]: Sortino Ratio
+                - generic [ref=e861]: "2.43"
+                - generic [ref=e862]: Downside risk-adj. return
+              - generic [ref=e863]:
+                - generic [ref=e865]: Avg Win / Avg Loss
+                - generic [ref=e867]: 2.15x
+                - generic [ref=e872]: +$342 / -$159
+              - generic [ref=e873]:
+                - generic [ref=e875]: Total Trades
+                - generic [ref=e877]: "19"
+                - generic [ref=e878]: TODAY period
+              - generic [ref=e879]:
+                - generic [ref=e881]: Avg Hold Time
+                - generic [ref=e883]: 23m
+                - generic [ref=e884]: Mean trade duration
+              - generic [ref=e885]:
+                - generic [ref=e887]: Expectancy
+                - generic [ref=e889]: $183
+                - generic [ref=e890]: Expected $ per trade
+          - generic [ref=e892]:
+            - generic [ref=e893]:
+              - generic [ref=e894]: ◈ AGENT ATTRIBUTION
+              - generic [ref=e895]: +$141,070
+              - generic [ref=e896]:
+                - button "P&L" [ref=e897] [cursor=pointer]
+                - button "WIN%" [ref=e898] [cursor=pointer]
+                - button "SIG" [ref=e899] [cursor=pointer]
+            - generic [ref=e900]:
+              - generic [ref=e901]: Agent
+              - generic [ref=e902]: Contribution
+              - generic [ref=e903]: Today
+              - generic [ref=e904]: Total
+              - generic [ref=e905]: Win%
+            - generic [ref=e906]:
+              - button "OptionsFlow FLOW +$3,400 +$42,100 78.9%" [ref=e908] [cursor=pointer]:
+                - generic [ref=e909]:
+                  - generic [ref=e910]: OptionsFlow
+                  - generic [ref=e911]: FLOW
+                - generic [ref=e914]: +$3,400
+                - generic [ref=e915]: +$42,100
+                - generic [ref=e916]: 78.9%
+              - button "VIXArbitrage VOL +$2,100 +$31,200 74.1%" [ref=e918] [cursor=pointer]:
+                - generic [ref=e919]:
+                  - generic [ref=e920]: VIXArbitrage
+                  - generic [ref=e921]: VOL
+                - generic [ref=e924]: +$2,100
+                - generic [ref=e925]: +$31,200
+                - generic [ref=e926]: 74.1%
+              - button "MomentumAlpha TREND +$1,240 +$18,450 68.2%" [ref=e928] [cursor=pointer]:
+                - generic [ref=e929]:
+                  - generic [ref=e930]: MomentumAlpha
+                  - generic [ref=e931]: TREND
+                - generic [ref=e934]: +$1,240
+                - generic [ref=e935]: +$18,450
+                - generic [ref=e936]: 68.2%
+              - button "MeanRevBot REVERT +$870 +$12,300 71.5%" [ref=e938] [cursor=pointer]:
+                - generic [ref=e939]:
+                  - generic [ref=e940]: MeanRevBot
+                  - generic [ref=e941]: REVERT
+                - generic [ref=e944]: +$870
+                - generic [ref=e945]: +$12,300
+                - generic [ref=e946]: 71.5%
+              - button "BreakoutScanner BREAK -$320 +$9,870 59.4%" [ref=e948] [cursor=pointer]:
+                - generic [ref=e949]:
+                  - generic [ref=e950]: BreakoutScanner
+                  - generic [ref=e951]: BREAK
+                - generic [ref=e954]: "-$320"
+                - generic [ref=e955]: +$9,870
+                - generic [ref=e956]: 59.4%
+              - button "SectorRotator SECTOR +$560 +$8,900 61.1%" [ref=e958] [cursor=pointer]:
+                - generic [ref=e959]:
+                  - generic [ref=e960]: SectorRotator
+                  - generic [ref=e961]: SECTOR
+                - generic [ref=e964]: +$560
+                - generic [ref=e965]: +$8,900
+                - generic [ref=e966]: 61.1%
+              - button "ScalpEngine SCALP +$430 +$7,650 62.8%" [ref=e968] [cursor=pointer]:
+                - generic [ref=e969]:
+                  - generic [ref=e970]: ScalpEngine
+                  - generic [ref=e971]: SCALP
+                - generic [ref=e974]: +$430
+                - generic [ref=e975]: +$7,650
+                - generic [ref=e976]: 62.8%
+              - button "GapFade REVERT +$190 +$5,500 63.3%" [ref=e978] [cursor=pointer]:
+                - generic [ref=e979]:
+                  - generic [ref=e980]: GapFade
+                  - generic [ref=e981]: REVERT
+                - generic [ref=e984]: +$190
+                - generic [ref=e985]: +$5,500
+                - generic [ref=e986]: 63.3%
+              - button "EarningsDrift EVENT -$750 +$4,200 55.0%" [ref=e988] [cursor=pointer]:
+                - generic [ref=e989]:
+                  - generic [ref=e990]: EarningsDrift
+                  - generic [ref=e991]: EVENT
+                - generic [ref=e994]: "-$750"
+                - generic [ref=e995]: +$4,200
+                - generic [ref=e996]: 55.0%
+              - button "NewsAlpha NEWS +$280 +$3,200 58.7%" [ref=e998] [cursor=pointer]:
+                - generic [ref=e999]:
+                  - generic [ref=e1000]: NewsAlpha
+                  - generic [ref=e1001]: NEWS
+                - generic [ref=e1004]: +$280
+                - generic [ref=e1005]: +$3,200
+                - generic [ref=e1006]: 58.7%
+              - button "DeltaNeutral ARBI -$180 +$1,100 52.3%" [ref=e1008] [cursor=pointer]:
+                - generic [ref=e1009]:
+                  - generic [ref=e1010]: DeltaNeutral
+                  - generic [ref=e1011]: ARBI
+                - generic [ref=e1014]: "-$180"
+                - generic [ref=e1015]: +$1,100
+                - generic [ref=e1016]: 52.3%
+              - button "MacroHedge MACRO -$1,200 -$3,400 44.2%" [ref=e1018] [cursor=pointer]:
+                - generic [ref=e1019]:
+                  - generic [ref=e1020]: MacroHedge
+                  - generic [ref=e1021]: MACRO
+                - generic [ref=e1024]: "-$1,200"
+                - generic [ref=e1025]: "-$3,400"
+                - generic [ref=e1026]: 44.2%
+            - generic [ref=e1027]:
+              - generic [ref=e1028]: TOTAL
+              - generic [ref=e1029]: +$6,620
+              - generic [ref=e1030]: +$141,070
+              - generic [ref=e1031]: 62.5%
+          - generic [ref=e1033]:
+            - generic [ref=e1034]:
+              - generic [ref=e1035]: ◈ SECTOR EXPOSURE
+              - generic [ref=e1036]: ⚠ CONCENTRATION
+              - generic [ref=e1037]: $128,450
+            - generic [ref=e1038]:
+              - generic:
+                - generic: Portfolio
+                - generic: $128k
+              - img [ref=e1041]:
+                - generic [ref=e1042]:
+                  - img [ref=e1044] [cursor=pointer]
+                  - img [ref=e1046] [cursor=pointer]
+                  - img [ref=e1048] [cursor=pointer]
+            - generic:
+              - generic [ref=e1049]:
+                - generic [ref=e1050]: Sector
+                - generic [ref=e1051]: Alloc
+                - generic [ref=e1052]: P&L
+              - generic [ref=e1054]:
+                - generic [ref=e1056]: Technology
+                - generic [ref=e1057]: 65%
+                - generic [ref=e1058]: +$4,820
+              - generic [ref=e1062]:
+                - generic [ref=e1064]: ETFs
+                - generic [ref=e1065]: 20%
+                - generic [ref=e1066]: +$1,240
+              - generic [ref=e1070]:
+                - generic [ref=e1072]: Financials
+                - generic [ref=e1073]: 15%
+                - generic [ref=e1074]: $320
+              - generic [ref=e1078]:
+                - generic [ref=e1079]: ⚠
+                - generic [ref=e1080]: Technology exceeds 30% concentration limit (65%)
+      - generic [ref=e546]:
+        - generic [ref=e548]:
+          - generic [ref=e549]:
+            - generic [ref=e550]: ◈ Order Entry
+            - generic [ref=e551]: AAPL
+          - generic [ref=e552]:
+            - generic [ref=e553]:
+              - generic [ref=e554]: Symbol
+              - textbox "AAPL" [ref=e555]
+            - generic [ref=e556]:
+              - generic [ref=e557]: Side
+              - generic [ref=e558]:
+                - button "▲ BUY" [ref=e559] [cursor=pointer]
+                - button "▼ SELL" [ref=e560] [cursor=pointer]
+            - generic [ref=e561]:
+              - generic [ref=e562]: Quantity
+              - spinbutton [ref=e563]
+            - generic [ref=e564]:
+              - generic [ref=e565]: Order Type
+              - generic [ref=e566]:
+                - button "MARKET" [ref=e567] [cursor=pointer]
+                - button "LIMIT" [ref=e568] [cursor=pointer]
+                - button "STOP" [ref=e569] [cursor=pointer]
+                - button "STOP_LIMIT" [ref=e570] [cursor=pointer]
+            - generic [ref=e571]:
+              - generic [ref=e572]: Time in Force
+              - generic [ref=e573]:
+                - button "DAY" [ref=e574] [cursor=pointer]
+                - button "GTC" [ref=e575] [cursor=pointer]
+                - button "IOC" [ref=e576] [cursor=pointer]
+                - button "FOK" [ref=e577] [cursor=pointer]
+          - generic [ref=e578]:
+            - paragraph [ref=e579]: Risk Preview
+            - generic [ref=e580]:
+              - generic [ref=e581]:
+                - generic [ref=e582]: Est. Value
+                - generic [ref=e583]: $17,893
+              - generic [ref=e584]:
+                - generic [ref=e585]: "% Portfolio"
+                - generic [ref=e586]: 17.9%
+              - generic [ref=e587]:
+                - generic [ref=e588]: Max Loss
+                - generic [ref=e589]: $358
+              - generic [ref=e590]:
+                - generic [ref=e591]: R/R
+                - generic [ref=e592]: 2.5x
+              - generic [ref=e593]:
+                - generic [ref=e594]: Cash Avail.
+                - generic [ref=e595]: $35,157
+          - generic [ref=e596]:
+            - button "CLR" [ref=e597] [cursor=pointer]
+            - button "BUY AAPL ↵" [ref=e598] [cursor=pointer]
+        - generic [ref=e600]:
+          - generic [ref=e601]:
+            - img [ref=e602]
+            - generic [ref=e604]: ◈ Risk Metrics
+            - generic [ref=e605]: CLEAR
+          - generic [ref=e606]:
+            - generic [ref=e608]:
+              - generic [ref=e609]: Daily Loss
+              - generic [ref=e610]: 11.6%
+            - generic [ref=e614]:
+              - generic [ref=e615]: Exposure
+              - generic [ref=e616]: 64.8%
+          - generic [ref=e619]:
+            - generic [ref=e620]:
+              - generic [ref=e621]: Total Exposure
+              - generic [ref=e622]: $64.8K
+            - generic [ref=e623]:
+              - generic [ref=e624]: Net Exposure
+              - generic [ref=e625]: $58.8K
+            - generic [ref=e626]:
+              - generic [ref=e627]: Daily P&L
+              - generic [ref=e628]: $578.55
+            - generic [ref=e629]:
+              - generic [ref=e630]: Max Drawdown
+              - generic [ref=e631]: 1.24%
+            - generic [ref=e632]:
+              - generic [ref=e633]: Open Positions
+              - generic [ref=e634]: "5"
+          - generic [ref=e635]:
+            - paragraph [ref=e636]: Policy Limits
+            - generic [ref=e637]:
+              - generic [ref=e638]: Max Position
+              - generic [ref=e639]: 15% / $50.0K
+            - generic [ref=e640]:
+              - generic [ref=e641]: Daily Loss Limit
+              - generic [ref=e642]: $5.0K
+            - generic [ref=e643]:
+              - generic [ref=e644]: Max Drawdown
+              - generic [ref=e645]: 5%
+            - generic [ref=e646]:
+              - generic [ref=e647]: Max Order Value
+              - generic [ref=e648]: $25.0K
+          - button "KILL SWITCH" [ref=e650] [cursor=pointer]:
+            - img [ref=e651]
+            - text: KILL SWITCH
+        - generic [ref=e656]:
+          - generic [ref=e657]:
+            - img [ref=e658]
+            - generic [ref=e661]: ◈ AI Analysis
+          - generic [ref=e662]:
+            - img [ref=e663]
+            - generic [ref=e666]: No recommendation loaded
+            - generic [ref=e667]: Select a signal → AI Analyze
+    - generic [ref=e669]:
+      - generic [ref=e671]:
+        - img [ref=e672]
+        - generic [ref=e674]: ◈ Console
+        - generic [ref=e675]: 2 events
+        - button "Clear console" [ref=e676] [cursor=pointer]:
+          - img [ref=e677]
+        - 'button "Collapse console (Ctrl+`)" [ref=e680] [cursor=pointer]':
+          - img [ref=e681]
+      - generic [ref=e683]:
+        - generic [ref=e684]:
+          - generic [ref=e685]: 23:16:24.779
+          - generic [ref=e686]: "[INFO ]"
+          - generic [ref=e687]:
+            - generic [ref=e688]: "[SYSTEM]"
+            - text: TERM v1.0.0 — Trading Terminal initialized
+        - generic [ref=e689]:
+          - generic [ref=e690]: 23:16:24.779
+          - generic [ref=e691]: "[INFO ]"
+          - generic [ref=e692]:
+            - generic [ref=e693]: "[SYSTEM]"
+            - text: "Mode: PAPER — Risk engine: ACTIVE"
+        - generic [ref=e695]: █
+      - generic [ref=e696]:
+        - generic [ref=e697]: ">"
+        - textbox "Enter command..." [ref=e698]
+  - generic [ref=e1081]: "-6%"
