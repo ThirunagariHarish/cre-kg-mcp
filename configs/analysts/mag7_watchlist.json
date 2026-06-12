@@ -1,0 +1,29 @@
+{
+  "analyst_id": "mag7",
+  "display_name": "Mag7 Weekly Calls",
+  "source_layer": "UNUSUAL_WHALES",
+  "wake_trigger": "SCHEDULE",
+  "wake_interval_seconds": 900,
+  "watchlist": [
+    "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"
+  ],
+  "option_type": "CALL",
+  "option_expiry_days_min": 5,
+  "option_expiry_days_max": 14,
+  "exit_rules": {
+    "strategy": "PRICE_TARGET",
+    "price_target_multiplier": 1.05
+  },
+  "scoring": {
+    "momentum_weight": 0.25,
+    "social_spike_weight": 0.15,
+    "option_volume_weight": 0.25,
+    "unusual_bets_weight": 0.25,
+    "sector_rotation_weight": 0.10
+  },
+  "min_evidence_items": 3,
+  "confidence_threshold": 0.65,
+  "max_premium_usd": 600,
+  "paper_mode": true,
+  "notes": "Upload additional tickers to watchlist array. Exit is price_target (1.05x) OR manual via dashboard."
+}

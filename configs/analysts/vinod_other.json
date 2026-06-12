@@ -1,0 +1,23 @@
+{
+  "analyst_id": "vinod_other",
+  "display_name": "Vinod Other Trades",
+  "source_layer": "DISCORD",
+  "wake_trigger": "DISCORD_MESSAGE",
+  "discord_server_id": "",
+  "discord_channel_id": "",
+  "allowed_symbols": [],
+  "ignore_symbols": ["SPX", "ES", "/ES"],
+  "ignore_strategy_types": ["fly", "butterfly", "condor", "iron_condor"],
+  "entry_buffer_pct": 0.30,
+  "execution_buffer_pct": 0.20,
+  "exit_rules": {
+    "strategy": "PARTIAL_SELL_PCT",
+    "partial_sell_pct": 0.70,
+    "source_channel_id": ""
+  },
+  "max_premium_usd": 800,
+  "min_evidence_items": 1,
+  "confidence_threshold": 0.70,
+  "paper_mode": true,
+  "notes": "70% sold on first sell signal. Remaining 30% sold on second sell signal from Vinod."
+}

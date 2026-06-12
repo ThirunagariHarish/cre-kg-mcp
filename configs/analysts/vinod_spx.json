@@ -1,0 +1,22 @@
+{
+  "analyst_id": "vinod_spx",
+  "display_name": "Vinod SPX",
+  "source_layer": "DISCORD",
+  "wake_trigger": "DISCORD_MESSAGE",
+  "discord_server_id": "",
+  "discord_channel_id": "",
+  "allowed_symbols": ["SPX"],
+  "ignore_symbols": ["ES", "/ES", "NQ", "/NQ"],
+  "ignore_strategy_types": ["fly", "butterfly", "condor", "iron_condor"],
+  "entry_buffer_pct": 0.30,
+  "execution_buffer_pct": 0.20,
+  "exit_rules": {
+    "strategy": "FIRST_SELL_FROM_SOURCE",
+    "source_channel_id": ""
+  },
+  "max_premium_usd": 800,
+  "min_evidence_items": 1,
+  "confidence_threshold": 0.70,
+  "paper_mode": true,
+  "notes": "First sell from Vinod closes 100% of position. entry_buffer_pct=30% is the max we pay above his entry. execution_buffer_pct=20% is the RH limit price sent."
+}

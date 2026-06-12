@@ -1,0 +1,25 @@
+{
+  "hard_stops": {
+    "max_loss_pct": 0.50,
+    "max_gain_pct": 1.00,
+    "market_close_sweep_minutes_before": 5
+  },
+  "option_guards": {
+    "min_ask_per_share": 0.10,
+    "max_otm_pct_0dte": 0.02
+  },
+  "redis": {
+    "idempotency_ttl_seconds": 86400,
+    "heartbeat_ttl_seconds": 90,
+    "heartbeat_interval_seconds": 30
+  },
+  "master_analyst": {
+    "dedup_window_seconds": 300,
+    "signal_queue_maxsize": 100
+  },
+  "notes": {
+    "hard_stops": "These cannot be disabled. Applied to ALL positions regardless of exit strategy.",
+    "option_guards": "min_ask enforces no penny options. max_otm_pct_0dte rejects contracts >2% out of the money on 0DTE.",
+    "idempotency_ttl_seconds": "Orders with same client_order_id within 24h are deduplicated via Redis."
+  }
+}
