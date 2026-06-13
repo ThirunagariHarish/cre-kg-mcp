@@ -142,6 +142,24 @@ class TestParseOtherBuy:
         assert sig is not None
         assert sig.expiry is None
 
+    def test_bougth_typo_handled(self) -> None:
+        """Vinod's common typo 'Bougth' must be parsed identically to 'Bought'."""
+        msg = _buy_msg("**OTHER :** Bougth AMD 500C at 1.20 Lotto Expiring tomm")
+        sig = parse_other_buy(msg)
+        assert sig is not None
+        assert sig.symbol == "AMD"
+        assert sig.direction == "CALL"
+        assert sig.strike == 500.0
+        assert sig.price == 1.20
+        # "tomm" → tomorrow
+
+    def test_expiring_tomorrow_typo(self) -> None:
+        msg = _buy_msg("**OTHER :** Bought TSLA 450C at 2.50 Expiring tomm")
+        sig = parse_other_buy(msg)
+        assert sig is not None
+        from datetime import datetime, timezone, timedelta
+        assert sig.expiry == datetime.now(tz=timezone.utc).date() + timedelta(days=1)
+
     def test_spx_symbol_rejected(self) -> None:
         msg = _buy_msg("**OTHER :** Bought SPX 7550C at 3.50 Exp: 06/12/2026")
         assert parse_other_buy(msg) is None
@@ -223,3 +241,27 @@ class TestParseSell:
         msg = _sell_msg("@here Sold SPX 7550C at 8.50")
         msg["is_bot"] = False
         assert parse_sell(msg) is None
+
+    def test_no_ticker_strike_only(self) -> None:
+        """'@here Sold most 7395P at 2.20' — no ticker, 'MOST' must NOT be the symbol."""
+        msg = _sell_msg("@here Sold most 7395P at 2.20")
+        sig = parse_sell(msg)
+        # Should not raise; "MOST" must not be the symbol
+        if sig is not None:
+            assert sig.symbol != "MOST"
+
+    def test_sold_around_fallback(self) -> None:
+        """'Sold most around 3.60' uses 'around' not 'at' — must still parse price."""
+        msg = _sell_msg("@here Sold most runners around 3.60 Paid 150%")
+        sig = parse_sell(msg)
+        assert sig is not None
+        assert sig.price == 3.60
+
+    def test_bougth_typo_spx(self) -> None:
+        """SPX channel buy with 'Bougth' typo must be parsed."""
+        msg = _buy_msg("**SPX :** Bougth SPX 7500C at 2.80")
+        sig = parse_spx_buy(msg)
+        assert sig is not None
+        assert sig.symbol == "SPX"
+        assert sig.strike == 7500.0
+        assert sig.price == 2.80

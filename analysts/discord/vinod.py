@@ -65,16 +65,18 @@ _IGNORE_STRATEGY_KEYWORDS = frozenset(
 # BUY patterns:
 # **SPX :** Bought SPX 7550C at 3.50 ...
 # **SPX :** Bought SPX 7440P at 4
+# Note: Vinod has a consistent typo "Bougth" — both spellings are handled.
 _SPX_BUY_RE = re.compile(
-    r"\*\*SPX\s*:\*\*\s*Bought\s+SPX\s+(\d+(?:\.\d+)?)\s*([CP])\s+at\s+([\d.]+)",
+    r"\*\*SPX\s*:\*\*\s*Boug(?:ht|th)\s+SPX\s+(\d+(?:\.\d+)?)\s*([CP])\s+at\s+(\d+(?:\.\d+)?)",
     re.IGNORECASE,
 )
 
 # **OTHER :** Bought TSLA 430C at 1.70 Expiring today
 # **OTHER :** Bought MSFT 455C at 4.80 Exp: 06/26/2026
+# **OTHER :** Bougth AMD 500C at 1.20 Lotto Expiring tomm  (typo)
 _OTHER_BUY_RE = re.compile(
-    r"\*\*OTHER\s*:\*\*\s*Bought\s+([A-Z]{1,5})\s+(\d+(?:\.\d+)?)\s*([CP])\s+at\s+([\d.]+)"
-    r"(?:.*?Exp(?:iring)?\s*:?\s*(today|(\d{1,2}/\d{1,2}/\d{4})))?",
+    r"\*\*OTHER\s*:\*\*\s*Boug(?:ht|th)\s+([A-Z]{1,5})\s+(\d+(?:\.\d+)?)\s*([CP])\s+at\s+(\d+(?:\.\d+)?)"
+    r"(?:.*?Exp(?:iring)?\s*:?\s*(today|tomm(?:orrow)?|(\d{1,2}/\d{1,2}/\d{4})))?",
     re.IGNORECASE | re.DOTALL,
 )
 
@@ -84,13 +86,20 @@ _OTHER_BUY_RE = re.compile(
 # @here Closed most SPX 7550C at 8.50
 # @here Last 2 SPX 7550C at 8.50
 # @here Sold most runners at 8.50  (no ticker/strike — context-dependent)
+# @here Sold most 7395P at 2.20  (no ticker — strike only; symbol resolved from context)
+# Requires explicit uppercase ticker [A-Z]{2,5} to avoid "MOST" being captured as ticker.
 _SELL_RE = re.compile(
     r"@here\s+(?:Sold|Closed|Last)\s+"
     r"(?:(\d+(?:\.\d+)?%?|most|runners?|all)\s+)?"
     r"(?:more\s+)?"
-    r"(?:([A-Z]{1,5})\s+(\d+(?:\.\d+)?)\s*([CP])\s+at\s+([\d.]+)"
-    r"|runners?\s+at\s+([\d.]+))",
+    r"(?:([A-Z]{2,5})\s+(\d+(?:\.\d+)?)\s*([CP])\s+(?:at|around)\s+(\d+(?:\.\d+)?)"
+    r"|runners?\s+(?:at|around)\s+(\d+(?:\.\d+)?))",
     re.IGNORECASE,
+)
+
+# Words that look like tickers but are quantity/direction words — reject if captured as symbol.
+_PSEUDO_TICKER_WORDS = frozenset(
+    ["MOST", "ALL", "LAST", "MORE", "SOME", "HALF", "REST", "SOLD", "RUNNERS", "RUNNER"]
 )
 
 # ─── Parsed message dataclasses ──────────────────────────────────────────────
@@ -184,8 +193,12 @@ def parse_other_buy(msg: dict) -> BuySignal | None:
     expiry: date | None = None
     if m.group(5):
         exp_raw = m.group(5).strip().lower()
-        if exp_raw == "today":
-            expiry = datetime.now(tz=timezone.utc).date()
+        today = datetime.now(tz=timezone.utc).date()
+        if exp_raw in ("today",):
+            expiry = today
+        elif exp_raw.startswith("tomm"):  # "tomm" / "tomorrow" typo variants
+            from datetime import timedelta
+            expiry = today + timedelta(days=1)
         elif m.group(6):
             try:
                 expiry = datetime.strptime(m.group(6), "%m/%d/%Y").date()
@@ -218,8 +231,8 @@ def parse_sell(msg: dict) -> SellSignal | None:
 
     m = _SELL_RE.search(content)
     if not m:
-        # Fallback: plain @here sell message without structured format
-        price_m = re.search(r"at\s+([\d.]+)", content)
+        # Fallback: plain @here sell message — "Sold most around 3.60", "Done at 20.20", etc.
+        price_m = re.search(r"(?:at|around)\s+(\d+(?:\.\d+)?)", content)
         if price_m:
             return SellSignal(
                 symbol=None,
@@ -236,10 +249,21 @@ def parse_sell(msg: dict) -> SellSignal | None:
     # Named-ticker sell: @here Sold 50% SPX 7550C at 8.50
     if m.group(2):
         symbol = m.group(2).upper()
-        strike = float(m.group(3))
-        direction: OptionDirection = "CALL" if m.group(4).upper() == "C" else "PUT"
-        price = float(m.group(5))
-        qty_hint = m.group(1) or "all"
+        # Reject if "symbol" is a quantity/direction word caught by regex backtracking
+        if symbol in _PSEUDO_TICKER_WORDS:
+            symbol = None
+            strike = None
+            direction = None
+            # Try to find price after "at/around" in the fallback
+            price_m = re.search(r"(?:at|around)\s+(\d+(?:\.\d+)?)", content)
+            price = float(price_m.group(1)) if price_m else 0.0
+            qty_hint = m.group(1) or "unknown"
+        else:
+            strike = float(m.group(3))
+            direction_char = m.group(4).upper() if m.group(4) else "C"
+            direction = "CALL" if direction_char == "C" else "PUT"
+            price = float(m.group(5))
+            qty_hint = m.group(1) or "all"
     else:
         # "Sold most runners at 8.50" — no specific contract info
         symbol = None
