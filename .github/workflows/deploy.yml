@@ -56,11 +56,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ── 2. Bootstrap secrets (idempotent) ─────────────────────────────────────
+  # ── 2. Bootstrap secrets (idempotent, non-blocking) ──────────────────────
   bootstrap-secrets:
     name: Bootstrap k8s Secrets
     needs: build-push
     runs-on: ubuntu-latest
+    # This step is a one-time setup; fail-safe so transient SSH timeouts
+    # don't block deploys when the secret is already present on the cluster.
+    continue-on-error: true
     steps:
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
@@ -70,11 +73,14 @@ jobs:
           if_key_exists: replace
 
       - name: Create doppler-token-secret (idempotent, token via stdin)
+        timeout-minutes: 1
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_SERVICE_TOKEN }}
           VPS_HOST: ${{ vars.VPS_HOST }}
         run: |
-          echo "$DOPPLER_TOKEN" | ssh -o StrictHostKeyChecking=no root@$VPS_HOST \
+          echo "$DOPPLER_TOKEN" | ssh -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=15 \
+            root@$VPS_HOST \
             "kubectl create namespace analyst-team --dry-run=client -o yaml | kubectl apply -f - && \
              kubectl create secret generic doppler-token-secret \
                --from-literal=serviceToken=\$(cat) \
@@ -85,6 +91,8 @@ jobs:
   deploy:
     name: Deploy to k3s
     needs: [build-push, bootstrap-secrets]
+    # Deploy even if bootstrap-secrets failed (secret already exists on cluster)
+    if: ${{ always() && needs.build-push.result == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
