@@ -75,15 +75,18 @@ jobs:
 
           # Ensure kustomize is present (idempotent)
           if ! command -v kustomize &>/dev/null; then
-            curl -sL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz \
-              | tar xz -C /usr/local/bin kustomize
+            sudo curl -sL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz \
+              | sudo tar xz -C /usr/local/bin kustomize
           fi
 
-          DEPLOY_DIR=/opt/analyst-team-deploy
+          DEPLOY_DIR=/home/ghrunner/analyst-team-deploy
+          # Trust the deploy dir regardless of who owns it
+          git config --global --add safe.directory "$DEPLOY_DIR"
           if [ -d "$DEPLOY_DIR/.git" ]; then
             cd "$DEPLOY_DIR" && git pull --ff-only
           else
             git clone git@github-analyst-team:ThirunagariHarish/AnalystTeam.git "$DEPLOY_DIR"
+            git config --global --add safe.directory "$DEPLOY_DIR"
           fi
           cd "$DEPLOY_DIR/k8s/analyst-team"
           kustomize edit set image ghcr.io/thirunagariharish/analyst-team=ghcr.io/thirunagariharish/analyst-team:$IMAGE_TAG
