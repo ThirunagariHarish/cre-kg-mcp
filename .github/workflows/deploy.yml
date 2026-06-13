@@ -3,7 +3,7 @@ name: Build → Push GHCR → Deploy k3s
 on:
   push:
     branches: [main]
-  workflow_dispatch:          # allow manual trigger from GitHub UI
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write           # needed to push to GHCR
+      packages: write
 
     outputs:
       image_tag: ${{ steps.meta.outputs.version }}
@@ -34,7 +34,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Extract metadata (tags, labels)
+      - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -55,7 +55,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ── 2. Bootstrap secrets on VPS (idempotent) ──────────────────────────────
+  # ── 2. Bootstrap secrets (idempotent) ─────────────────────────────────────
   bootstrap-secrets:
     name: Bootstrap k8s Secrets
     needs: build-push
@@ -68,18 +68,19 @@ jobs:
           known_hosts: unnecessary
           if_key_exists: replace
 
-      # Pass Doppler token via stdin — never appears in process list or shell history
-      - name: Create doppler-token-secret (idempotent)
+      - name: Create doppler-token-secret (idempotent, token via stdin)
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_SERVICE_TOKEN }}
+          VPS_HOST: ${{ vars.VPS_HOST }}
         run: |
-          echo "$DOPPLER_TOKEN" | ssh -o StrictHostKeyChecking=no root@${{ vars.VPS_HOST }} \
-            "kubectl create secret generic doppler-token-secret \
+          echo "$DOPPLER_TOKEN" | ssh -o StrictHostKeyChecking=no root@$VPS_HOST \
+            "kubectl create namespace analyst-team --dry-run=client -o yaml | kubectl apply -f - && \
+             kubectl create secret generic doppler-token-secret \
                --from-literal=serviceToken=\$(cat) \
                -n analyst-team \
                --dry-run=client -o yaml | kubectl apply -f -"
 
-  # ── 3. Deploy to k3s via SSH ───────────────────────────────────────────────
+  # ── 3. Deploy to k3s ──────────────────────────────────────────────────────
   deploy:
     name: Deploy to k3s
     needs: [build-push, bootstrap-secrets]
@@ -88,74 +89,54 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.0
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
         with:
-          host: ${{ vars.VPS_HOST }}
-          username: root
           key: ${{ secrets.VPS_SSH_KEY }}
-          port: 22
-          timeout: 180s
-          envs: VPS_DEPLOY_KEY
-          script: |
+          known_hosts: unnecessary
+          if_key_exists: replace
+
+      - name: Install deploy key for repo clone on VPS2
+        env:
+          DEPLOY_KEY: ${{ secrets.VPS_DEPLOY_KEY }}
+          VPS_HOST: ${{ vars.VPS_HOST }}
+        run: |
+          echo "$DEPLOY_KEY" | ssh -o StrictHostKeyChecking=no root@$VPS_HOST \
+            "mkdir -p /root/.ssh && chmod 700 /root/.ssh
+             cat > /root/.ssh/analyst_team_deploy
+             chmod 600 /root/.ssh/analyst_team_deploy
+             grep -q 'github-analyst-team' /root/.ssh/config 2>/dev/null || \
+               printf 'Host github-analyst-team\n  HostName github.com\n  User git\n  IdentityFile /root/.ssh/analyst_team_deploy\n  StrictHostKeyChecking no\n' \
+               >> /root/.ssh/config"
+
+      - name: Pull manifests, update image tag, apply
+        env:
+          IMAGE_TAG: ${{ needs.build-push.outputs.image_tag }}
+          VPS_HOST: ${{ vars.VPS_HOST }}
+        run: |
+          ssh -o StrictHostKeyChecking=no root@$VPS_HOST "
             set -e
-            export VPS_DEPLOY_KEY="${{ secrets.VPS_DEPLOY_KEY }}"
-
-            # ── Ensure namespace exists ──────────────────────────────
-            kubectl create namespace analyst-team --dry-run=client -o yaml \
-              | kubectl apply -f -
-
-            # ── Install / refresh deploy key ─────────────────────────
-            mkdir -p /root/.ssh && chmod 700 /root/.ssh
-            echo "$VPS_DEPLOY_KEY" > /root/.ssh/analyst_team_deploy
-            chmod 600 /root/.ssh/analyst_team_deploy
-            grep -q 'github-analyst-team' /root/.ssh/config 2>/dev/null || cat >> /root/.ssh/config << 'SSHCFG'
-Host github-analyst-team
-  HostName github.com
-  User git
-  IdentityFile /root/.ssh/analyst_team_deploy
-  StrictHostKeyChecking no
-SSHCFG
-
-            # ── Pull latest manifests from GitHub ───────────────────
-            DEPLOY_DIR="/opt/analyst-team-deploy"
-            if [ -d "$DEPLOY_DIR/.git" ]; then
-              cd "$DEPLOY_DIR" && git pull --ff-only
+            DEPLOY_DIR=/opt/analyst-team-deploy
+            if [ -d \$DEPLOY_DIR/.git ]; then
+              cd \$DEPLOY_DIR && git pull --ff-only
             else
-              git clone git@github-analyst-team:ThirunagariHarish/AnalystTeam.git "$DEPLOY_DIR"
+              git clone git@github-analyst-team:ThirunagariHarish/AnalystTeam.git \$DEPLOY_DIR
             fi
-            cd "$DEPLOY_DIR"
-
-            # ── Pin exact image SHA for this deploy ──────────────────
-            IMAGE_TAG="${{ needs.build-push.outputs.image_tag }}"
-            cd k8s/analyst-team
-            kustomize edit set image \
-              "ghcr.io/thirunagariharish/analyst-team=ghcr.io/thirunagariharish/analyst-team:${IMAGE_TAG}"
+            cd \$DEPLOY_DIR/k8s/analyst-team
+            kustomize edit set image ghcr.io/thirunagariharish/analyst-team=ghcr.io/thirunagariharish/analyst-team:$IMAGE_TAG
             cd ../..
-
-            # ── Apply all manifests ──────────────────────────────────
             kubectl apply -k k8s/analyst-team/
-
-            # ── Roll out & wait ──────────────────────────────────────
-            kubectl rollout status deployment/analyst-team-dashboard \
-              -n analyst-team --timeout=180s
-            kubectl rollout status deployment/analyst-team-bot \
-              -n analyst-team --timeout=180s
-
-            echo ""
-            echo "=== ✅ Deployed: ${IMAGE_TAG} ==="
+            kubectl rollout status deployment/analyst-team-dashboard -n analyst-team --timeout=180s
+            kubectl rollout status deployment/analyst-team-bot -n analyst-team --timeout=180s
+            echo '=== Deployed: $IMAGE_TAG ==='
             kubectl get pods -n analyst-team
             kubectl get ingress -n analyst-team
+          "
 
-      - name: Smoke test dashboard
+      - name: Smoke test
         run: |
           sleep 20
           STATUS=$(curl -o /dev/null -s -w "%{http_code}" \
-            --max-time 15 \
-            https://analystteam.cashflowus.com/api/health 2>/dev/null || echo "000")
+            --max-time 15 https://analystteam.cashflowus.com/api/health 2>/dev/null || echo 000)
           echo "Dashboard /api/health → $STATUS"
-          if [ "$STATUS" = "200" ]; then
-            echo "✅ Dashboard is live at https://analystteam.cashflowus.com"
-          else
-            echo "⚠️  Not yet responding — DNS may still be propagating (check in 5 min)"
-          fi
+          [ "$STATUS" = "200" ] && echo "✅ Live" || echo "⚠️  DNS not yet propagated — check in 5 min"
