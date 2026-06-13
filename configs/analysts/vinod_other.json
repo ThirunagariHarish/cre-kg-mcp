@@ -4,7 +4,7 @@
   "source_layer": "DISCORD",
   "wake_trigger": "DISCORD_MESSAGE",
   "discord_server_id": "",
-  "discord_channel_id": "",
+  "discord_channel_id": "1495516626647519343",
   "allowed_symbols": [],
   "ignore_symbols": ["SPX", "ES", "/ES"],
   "ignore_strategy_types": ["fly", "butterfly", "condor", "iron_condor"],
@@ -13,7 +13,7 @@
   "exit_rules": {
     "strategy": "PARTIAL_SELL_PCT",
     "partial_sell_pct": 0.70,
-    "source_channel_id": ""
+    "source_channel_id": "1495516626647519343"
   },
   "max_premium_usd": 800,
   "min_evidence_items": 1,

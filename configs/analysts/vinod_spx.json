@@ -4,7 +4,7 @@
   "source_layer": "DISCORD",
   "wake_trigger": "DISCORD_MESSAGE",
   "discord_server_id": "",
-  "discord_channel_id": "",
+  "discord_channel_id": "1495516216645783562",
   "allowed_symbols": ["SPX"],
   "ignore_symbols": ["ES", "/ES", "NQ", "/NQ"],
   "ignore_strategy_types": ["fly", "butterfly", "condor", "iron_condor"],
@@ -12,7 +12,7 @@
   "execution_buffer_pct": 0.20,
   "exit_rules": {
     "strategy": "FIRST_SELL_FROM_SOURCE",
-    "source_channel_id": ""
+    "source_channel_id": "1495516216645783562"
   },
   "max_premium_usd": 800,
   "min_evidence_items": 1,

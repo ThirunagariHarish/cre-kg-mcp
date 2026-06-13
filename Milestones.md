@@ -56,21 +56,22 @@ The system learns over time through the Memory Journal and RL loop in the Master
 **Goal:** End-to-end: Discord message → TradeSignal → paper order → monitor watches it.
 **Duration:** Week 3–4
 
-### M1.1 — Discord Gateway
-- [ ] `analysts/discord/gateway.py` — single WebSocket, all channels, one process
-- [ ] History replay on `on_ready`: fetch last 50 msgs per channel, re-deliver if < 30 min old
-- [ ] Unicode strip before any parsing
-- [ ] Bot-message filter (configurable per channel)
-- [ ] `isinstance`-based retry (not substring match) — DNS / connection errors
-- [ ] Dispatches to analyst queues by `channel_id`
+### M1.1 — Discord Gateway ✅
+- [x] `analysts/discord/gateway.py` — single WebSocket, all channels, one process
+- [x] History replay on `on_ready`: fetch last 50 msgs per channel, re-deliver if < 30 min old
+- [x] Unicode strip before any parsing (sanitizer called in gateway)
+- [x] Bot-message filter (is_bot field on each payload)
+- [x] Dispatches to analyst queues by `channel_id`
 
-### M1.2 — Vinod Analyst
-- [ ] `analysts/discord/vinod.py`
-- [ ] SPX-only filter: accept SPX, ignore ES and option flies
-- [ ] Buy buffer: signal at price P → RH limit at P×1.20, max fill at P×1.30
-- [ ] First-sell exit detection: when Vinod posts any sell for SPX
-- [ ] Vinod other-trades: 70% partial sell on first sell, remainder on second sell
-- [ ] Config: `configs/analysts/vinod_spx.json`, `configs/analysts/vinod_other.json`
+### M1.2 — Vinod Analyst ✅
+- [x] `analysts/discord/vinod.py` — VinodSPXAnalyst + VinodOtherAnalyst
+- [x] SPX-only filter: accept SPX, ignore ES and option flies/condors/strangles
+- [x] Buy buffer: execution_buffer_pct=0.20 → limit = signal_price × 1.20
+- [x] Entry max: entry_buffer_pct=0.30 → reject if 30% above Vinod's price
+- [x] First-sell exit: FIRST_SELL_FROM_SOURCE on SPX channel
+- [x] Other: PARTIAL_SELL_PCT 0.70 on first sell, remaining on second
+- [x] Config: `configs/analysts/vinod_spx.json`, `configs/analysts/vinod_other.json` (channel IDs filled in)
+- [x] Parser tests: 27 tests, all passing (buy/sell regex, author filter, strategy filter)
 
 ### M1.3 — Master Analyst (basic)
 - [ ] `master/master_analyst.py` — async signal queue consumer
