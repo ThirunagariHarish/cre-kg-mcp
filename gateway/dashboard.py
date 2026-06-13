@@ -90,7 +90,8 @@ async def startup() -> None:
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request) -> HTMLResponse:
     data = get_all_state()
-    return templates.TemplateResponse("dashboard.html", {"request": request, **data})
+    # Starlette 0.40+ changed signature: TemplateResponse(request, name, context)
+    return templates.TemplateResponse(request, "dashboard.html", data)
 
 
 @app.websocket("/ws")
