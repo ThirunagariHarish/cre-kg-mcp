@@ -43,7 +43,7 @@ def _make_pos(
         symbol=symbol,
         direction=direction,
         strike=strike,
-        expiry=expiry or date(2025, 12, 19),
+        expiry=expiry or date(2030, 12, 19),
         avg_cost_per_share=avg_cost,
     )
 
@@ -53,7 +53,7 @@ def _make_contract(bid: float = 1.0, ask: float = 1.4, oi: int = 500) -> OptionC
         symbol="SPY",
         direction="CALL",
         strike=450.0,
-        expiry=date(2025, 12, 19),
+        expiry=date(2030, 12, 19),
         bid_per_share=bid,
         ask_per_share=ask,
         mark_per_share=(bid + ask) / 2,
@@ -101,7 +101,7 @@ async def test_wide_spread_alert() -> None:
     # spread_pct = (2.0 - 0.5) / 1.25 = 1.2  > 0.15
     contract = _make_contract(bid=0.5, ask=2.0, oi=200)  # oi > 100 so LOW_OI won't fire first
     monitor = _monitor_with_contract(contract)
-    pos = _make_pos(avg_cost=1.0, expiry=date(2025, 12, 19))
+    pos = _make_pos(avg_cost=1.0, expiry=date(2030, 12, 19))
 
     result = await monitor._refresh_position(pos)
 
@@ -214,7 +214,7 @@ async def test_low_oi_alert() -> None:
     """open_interest < 100 and > 0 -> alert='LOW_OI'."""
     contract = _make_contract(bid=1.0, ask=1.1, oi=50)  # spread < 15% so WIDE_SPREAD won't fire
     monitor = _monitor_with_contract(contract)
-    pos = _make_pos(avg_cost=1.0, expiry=date(2025, 12, 19))
+    pos = _make_pos(avg_cost=1.0, expiry=date(2030, 12, 19))
 
     result = await monitor._refresh_position(pos)
 
@@ -231,7 +231,7 @@ async def test_no_alert_when_healthy() -> None:
     """Healthy position: no alert."""
     contract = _make_contract(bid=1.0, ask=1.05, oi=500)  # tiny spread, good OI
     monitor = _monitor_with_contract(contract)
-    pos = _make_pos(avg_cost=1.0, expiry=date(2025, 12, 19))
+    pos = _make_pos(avg_cost=1.0, expiry=date(2030, 12, 19))
 
     result = await monitor._refresh_position(pos)
 
