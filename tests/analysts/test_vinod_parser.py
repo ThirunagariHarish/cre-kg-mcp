@@ -164,6 +164,23 @@ class TestParseOtherBuy:
         msg = _buy_msg("**OTHER :** Bought SPX 7550C at 3.50 Exp: 06/12/2026")
         assert parse_other_buy(msg) is None
 
+    def test_spy_accepted_in_other_channel(self) -> None:
+        """SPY trades belong to Other analyst — must NOT be excluded."""
+        msg = _buy_msg("**OTHER :** Bought SPY 735P at 1.10 Exp: 06/15/2026 Lotto for weekend")
+        sig = parse_other_buy(msg)
+        assert sig is not None
+        assert sig.symbol == "SPY"
+        assert sig.direction == "PUT"
+        assert sig.strike == 735.0
+        assert sig.price == 1.10
+
+    def test_spy_bougth_typo_accepted(self) -> None:
+        """SPY with Bougth typo is still valid."""
+        msg = _buy_msg("**OTHER :** Bougth SPY 752P at 1.30 Expiring tomm. Small overnight hedge")
+        sig = parse_other_buy(msg)
+        assert sig is not None
+        assert sig.symbol == "SPY"
+
     def test_butterfly_ignored(self) -> None:
         msg = _buy_msg("**OTHER :** Bought TSLA butterfly 430/440/450 at 1.70")
         assert parse_other_buy(msg) is None
@@ -212,9 +229,15 @@ class TestParseSell:
         msg = _sell_msg("@here Sold SPX 7550C at 8.50", author="INFRA TRADE ALERT [BOT]")
         assert parse_sell(msg) is None
 
-    def test_no_at_here_ignored(self) -> None:
+    def test_no_at_here_structured_is_valid(self) -> None:
+        """Structured sell (full contract) is parsed even without @here prefix.
+        Vinod occasionally omits @here on real sell messages e.g. 'Sold 50% SPX 7415C at 3.50'.
+        The unstructured fallback still requires @here to avoid stoploss false-positives."""
         msg = _sell_msg("Sold 50% SPX 7550C at 8.50")
-        assert parse_sell(msg) is None
+        sig = parse_sell(msg)
+        assert sig is not None
+        assert sig.symbol == "SPX"
+        assert sig.price == 8.50
 
     def test_put_sell(self) -> None:
         msg = _sell_msg("@here Sold 70% SPX 7440P at 6.20")
@@ -241,6 +264,30 @@ class TestParseSell:
         msg = _sell_msg("@here Sold SPX 7550C at 8.50")
         msg["is_bot"] = False
         assert parse_sell(msg) is None
+
+    def test_sell_without_at_here_structured(self) -> None:
+        """Structured sell (full contract) must parse even without @here prefix."""
+        msg = _sell_msg("Sold 50% SPX 7415C at 3.50")
+        sig = parse_sell(msg)
+        assert sig is not None
+        assert sig.symbol == "SPX"
+        assert sig.strike == 7415.0
+        assert sig.direction == "CALL"
+        assert sig.price == 3.50
+        assert sig.quantity_hint == "50%"
+
+    def test_stoploss_commentary_not_parsed_without_at_here(self) -> None:
+        """'Stoploss at 7310' must NOT be parsed as a sell signal — no @here, no full contract."""
+        msg = _sell_msg("Stoploss at 7310")
+        assert parse_sell(msg) is None
+
+    def test_stoploss_with_at_here_not_parsed(self) -> None:
+        """@here stoploss-style without a contract format falls through to fallback price
+        extraction — this is expected behaviour (unstructured sell, symbol=None)."""
+        msg = _sell_msg("@here Can stop out and revisit once above 7400")
+        sig = parse_sell(msg)
+        # No 'at X' pattern → None
+        assert sig is None
 
     def test_no_ticker_strike_only(self) -> None:
         """'@here Sold most 7395P at 2.20' — no ticker, 'MOST' must NOT be the symbol."""

@@ -88,8 +88,11 @@ _OTHER_BUY_RE = re.compile(
 # @here Sold most runners at 8.50  (no ticker/strike — context-dependent)
 # @here Sold most 7395P at 2.20  (no ticker — strike only; symbol resolved from context)
 # Requires explicit uppercase ticker [A-Z]{2,5} to avoid "MOST" being captured as ticker.
+# @here is optional for the structured path — full contract (symbol+strike+C/P+price)
+# is specific enough without it. @here IS required for the unstructured fallback path
+# (see parse_sell) to prevent stoploss commentary from being parsed as sells.
 _SELL_RE = re.compile(
-    r"@here\s+(?:Sold|Closed|Last)\s+"
+    r"(?:@here\s+)?(?:Sold|Closed|Last)\s+"
     r"(?:(\d+(?:\.\d+)?%?|most|runners?|all)\s+)?"
     r"(?:more\s+)?"
     r"(?:([A-Z]{2,5})\s+(\d+(?:\.\d+)?)\s*([CP])\s+(?:at|around)\s+(\d+(?:\.\d+)?)"
@@ -182,8 +185,9 @@ def parse_other_buy(msg: dict) -> BuySignal | None:
 
     symbol = m.group(1).upper()
 
-    # SPX/ES belong to the SPX analyst
-    if symbol in ("SPX", "ES", "NQ", "SPY"):
+    # SPX/ES futures belong to the SPX analyst or are not traded.
+    # SPY, QQQ, and all other equities belong to the Other analyst.
+    if symbol in ("SPX", "ES", "NQ"):
         return None
 
     strike = float(m.group(2))
@@ -221,17 +225,26 @@ def parse_sell(msg: dict) -> SellSignal | None:
     """
     Parse a Vinod sell message. Returns None if not a sell signal.
     Works for both SPX and Other channels.
+
+    The @here prefix requirement applies to the unstructured fallback only —
+    it prevents false positives on stoploss commentary like "Stoploss at 7310".
+    The structured _SELL_RE path (full contract: symbol + strike + direction + price)
+    is safe without @here because it requires a complete contract specification.
     """
     if not _is_sell_author(msg):
         return None
 
     content = msg["content"]
-    if not content.startswith("@here"):
-        return None
 
+    # Try structured match first — safe without @here (full contract required:
+    # symbol + strike + direction + price). This catches "Sold 50% SPX 7415C at 3.50"
+    # without @here, which Vinod sometimes omits.
     m = _SELL_RE.search(content)
     if not m:
-        # Fallback: plain @here sell message — "Sold most around 3.60", "Done at 20.20", etc.
+        # Fallback: unstructured sell — ONLY accept if prefixed with @here to avoid
+        # false-positives on stoploss commentary ("Stoploss at 7310").
+        if not content.startswith("@here"):
+            return None
         price_m = re.search(r"(?:at|around)\s+(\d+(?:\.\d+)?)", content)
         if price_m:
             return SellSignal(
