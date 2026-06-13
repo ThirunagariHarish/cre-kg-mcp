@@ -96,19 +96,33 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           timeout: 180s
+          envs: VPS_DEPLOY_KEY
           script: |
             set -e
+            export VPS_DEPLOY_KEY="${{ secrets.VPS_DEPLOY_KEY }}"
 
             # ── Ensure namespace exists ──────────────────────────────
             kubectl create namespace analyst-team --dry-run=client -o yaml \
               | kubectl apply -f -
+
+            # ── Install / refresh deploy key ─────────────────────────
+            mkdir -p /root/.ssh && chmod 700 /root/.ssh
+            echo "$VPS_DEPLOY_KEY" > /root/.ssh/analyst_team_deploy
+            chmod 600 /root/.ssh/analyst_team_deploy
+            grep -q 'github-analyst-team' /root/.ssh/config 2>/dev/null || cat >> /root/.ssh/config << 'SSHCFG'
+Host github-analyst-team
+  HostName github.com
+  User git
+  IdentityFile /root/.ssh/analyst_team_deploy
+  StrictHostKeyChecking no
+SSHCFG
 
             # ── Pull latest manifests from GitHub ───────────────────
             DEPLOY_DIR="/opt/analyst-team-deploy"
             if [ -d "$DEPLOY_DIR/.git" ]; then
               cd "$DEPLOY_DIR" && git pull --ff-only
             else
-              git clone https://github.com/ThirunagariHarish/AnalystTeam.git "$DEPLOY_DIR"
+              git clone git@github-analyst-team:ThirunagariHarish/AnalystTeam.git "$DEPLOY_DIR"
             fi
             cd "$DEPLOY_DIR"
 
