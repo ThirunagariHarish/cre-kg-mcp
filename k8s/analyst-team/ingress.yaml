@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: analyst-team
+  namespace: analyst-team
+  labels:
+    app.kubernetes.io/name: analyst-team
+    app.kubernetes.io/component: ingress
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: analystteam.cashflowus.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: analyst-team-dashboard
+                port:
+                  number: 8765
+  tls:
+    - hosts:
+        - analystteam.cashflowus.com
+      secretName: analyst-team-tls

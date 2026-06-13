@@ -1,0 +1,18 @@
+# Doppler Kubernetes Operator – syncs secrets from Doppler project "analyst-team" / config "prd"
+# Before applying: create the service token secret:
+#   kubectl create secret generic doppler-token-secret \
+#     --from-literal=serviceToken="dp.st.prd.XXXXXXXX" \
+#     -n analyst-team
+apiVersion: secrets.doppler.com/v1alpha1
+kind: DopplerSecret
+metadata:
+  name: analyst-team-credentials
+  namespace: analyst-team
+spec:
+  tokenSecret:
+    name: doppler-token-secret
+  managedSecret:
+    name: analyst-team-credentials
+    namespace: analyst-team
+    type: Opaque
+  resyncSeconds: 60

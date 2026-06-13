@@ -1,93 +1,154 @@
+# ── Dashboard deployment ─────────────────────────────────────────────────────
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: analyst-team
-  namespace: trading
+  name: analyst-team-dashboard
+  namespace: analyst-team
   labels:
-    app: analyst-team
-    version: "1.0"
+    app: analyst-team-dashboard
+    app.kubernetes.io/name: analyst-team
+    app.kubernetes.io/component: dashboard
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: analyst-team
+      app: analyst-team-dashboard
   template:
     metadata:
       labels:
-        app: analyst-team
+        app: analyst-team-dashboard
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "8080"
-        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8765"
+        prometheus.io/path: "/api/health"
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: dashboard
+          image: ghcr.io/thirunagariharish/analyst-team:latest
+          command:
+            - python
+            - -m
+            - uvicorn
+            - gateway.dashboard:app
+            - --host
+            - "0.0.0.0"
+            - --port
+            - "8765"
+            - --workers
+            - "1"
+          ports:
+            - name: http
+              containerPort: 8765
+          envFrom:
+            - configMapRef:
+                name: analyst-team-config
+            - secretRef:
+                name: analyst-team-credentials
+                optional: true
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+              cpu: 500m
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8765
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8765
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 2
+          volumeMounts:
+            - name: state
+              mountPath: /app/shared/state
+      volumes:
+        - name: state
+          persistentVolumeClaim:
+            claimName: analyst-team-state
+---
+# ── Bot deployment (analysts + monitor) ──────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analyst-team-bot
+  namespace: analyst-team
+  labels:
+    app: analyst-team-bot
+    app.kubernetes.io/name: analyst-team
+    app.kubernetes.io/component: bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analyst-team-bot
+  template:
+    metadata:
+      labels:
+        app: analyst-team-bot
     spec:
       terminationGracePeriodSeconds: 60
       containers:
-      - name: analyst-team
-        image: analyst-team:latest
-        command: ["python", "scripts/run_all_analysts.py"]
-        ports:
-        - containerPort: 8080
-          name: dashboard
-          protocol: TCP
-        envFrom:
-        - secretRef:
-            name: analyst-team-secrets
-        - configMapRef:
-            name: analyst-team-config
-        resources:
-          requests:
-            cpu: "500m"
-            memory: "512Mi"
-          limits:
-            cpu: "2000m"
-            memory: "2Gi"
-        volumeMounts:
-        - name: shared-state
-          mountPath: /app/shared/state
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 30
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          failureThreshold: 2
+        - name: bot
+          image: ghcr.io/thirunagariharish/analyst-team:latest
+          command:
+            - python
+            - scripts/run_all_analysts.py
+          envFrom:
+            - configMapRef:
+                name: analyst-team-config
+            - secretRef:
+                name: analyst-team-credentials
+                optional: true
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 500m
+            limits:
+              memory: 2Gi
+              cpu: 2000m
+          volumeMounts:
+            - name: state
+              mountPath: /app/shared/state
       volumes:
-      - name: shared-state
-        persistentVolumeClaim:
-          claimName: analyst-team-state
+        - name: state
+          persistentVolumeClaim:
+            claimName: analyst-team-state
 ---
+# ── Shared PVC (both pods mount the same state dir) ───────────────────────────
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: analyst-team-state
-  namespace: trading
+  namespace: analyst-team
 spec:
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
   resources:
     requests:
       storage: 5Gi
+  storageClassName: local-path
 ---
+# ── Dashboard service ─────────────────────────────────────────────────────────
 apiVersion: v1
 kind: Service
 metadata:
-  name: analyst-team
-  namespace: trading
+  name: analyst-team-dashboard
+  namespace: analyst-team
   labels:
-    app: analyst-team
+    app: analyst-team-dashboard
 spec:
   selector:
-    app: analyst-team
+    app: analyst-team-dashboard
   ports:
-  - name: dashboard
-    port: 8080
-    targetPort: 8080
-    protocol: TCP
-  type: ClusterIP
+    - name: http
+      port: 8765
+      targetPort: 8765

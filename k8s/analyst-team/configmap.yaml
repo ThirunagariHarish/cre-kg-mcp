@@ -2,34 +2,38 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: analyst-team-config
-  namespace: trading
-  labels:
-    app: analyst-team
+  namespace: analyst-team
 data:
-  # Safety — always default to paper mode in k8s; Doppler secret PAPER_TRADING_MODE
-  # must be explicitly set to "false" to go live.
+  # Safety — NEVER change PAPER_TRADING_MODE here; override in Doppler
   PAPER_TRADING_MODE: "true"
-
-  # Position sizing hard limits (USD)
   MAX_POSITION_SIZE_USD: "200"
   MAX_DAILY_LOSS_USD: "500"
 
-  # Monitor Agent poll interval
-  MONITOR_POLL_INTERVAL_SECONDS: "30"
+  # Redis — points to our in-namespace Redis
+  REDIS_URL: "redis://redis.analyst-team.svc.cluster.local:6379/0"
 
-  # TA check interval within monitor (seconds)
-  TA_CHECK_INTERVAL_SECONDS: "300"
-
-  # RL rule learner — how often to re-run (minutes)
-  MONITOR_RL_LEARN_INTERVAL_MINUTES: "60"
-
-  # File paths (relative to /app)
-  KILL_SWITCH_PATH: "shared/state/kill_switch.json"
-  OPEN_POSITIONS_PATH: "shared/state/open_positions.json"
-  MONITOR_RL_DATA_PATH: "shared/state/monitor_rl_data.jsonl"
-  MONITOR_RULES_PATH: "shared/state/monitor_rules.json"
-  TRADE_JOURNAL_PATH: "shared/state/trade_journal.jsonl"
-
-  # Logging
+  # Dashboard
+  DASHBOARD_PORT: "8765"
   LOG_LEVEL: "INFO"
   LOG_FORMAT: "json"
+
+  # Claude model
+  CLAUDE_MODEL: "claude-sonnet-4-6"
+
+  # Monitor intervals
+  MONITOR_POLL_INTERVAL_SECONDS: "30"
+  TA_CHECK_INTERVAL_SECONDS: "300"
+  MONITOR_RL_LEARN_INTERVAL_MINUTES: "60"
+
+  # State file paths (relative to /app, PVC mounted at /app/shared/state)
+  KILL_SWITCH_PATH: "shared/state/kill_switch.json"
+  OPEN_POSITIONS_PATH: "shared/state/open_positions.json"
+  TRADE_JOURNAL_PATH: "shared/state/trade_journal.jsonl"
+  MONITOR_RL_DATA_PATH: "shared/state/monitor_rl_data.jsonl"
+  MONITOR_RULES_PATH: "shared/state/monitor_rules.json"
+
+  # Feature flags
+  ENABLE_KELLY_SIZING: "false"
+  ENABLE_POLYGON_QUOTES: "false"
+  ENABLE_GREEKS_MONITORING: "true"
+  SKIP_SPREAD_CHECK: "false"
