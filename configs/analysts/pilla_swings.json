@@ -1,0 +1,14 @@
+{
+  "analyst_id": "pilla_swings",
+  "display_name": "Pilla Swing Trades",
+  "source_layer": "DISCORD",
+  "wake_trigger": "DISCORD_MESSAGE",
+  "discord_channel_id": "PILLA_CHANNEL_PLACEHOLDER",
+  "exit_rules": {
+    "strategy": "OWNER_LAST_SELL",
+    "source_channel_id": "PILLA_CHANNEL_PLACEHOLDER",
+    "owner_silence_seconds": 600
+  },
+  "paper_mode": true,
+  "notes": "Channel ID TBD. OWNER_LAST_SELL: close 10 min after owner's last sell."
+}

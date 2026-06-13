@@ -1,0 +1,14 @@
+{
+  "analyst_id": "albert",
+  "display_name": "Albert Earnings Trader",
+  "source_layer": "DISCORD",
+  "wake_trigger": "DISCORD_MESSAGE",
+  "discord_channel_id": "PLACEHOLDER_FILL_IN",
+  "exit_rules": {"strategy": "MANUAL"},
+  "execution_buffer_pct": 0.20,
+  "max_premium_usd": 800,
+  "min_evidence_items": 1,
+  "confidence_threshold": 0.70,
+  "paper_mode": true,
+  "notes": "Earnings-only trades. MANUAL exit — do not auto-close."
+}

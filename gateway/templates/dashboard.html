@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AnalystTeam Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            surface: '#0f172a',
+            card:    '#1e293b',
+            border:  '#334155',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #0f172a; color: #e2e8f0; font-family: ui-monospace, SFMono-Regular, monospace; }
+    .badge-green  { background:#166534; color:#bbf7d0; border:1px solid #15803d; }
+    .badge-red    { background:#7f1d1d; color:#fecaca; border:1px solid #991b1b; }
+    .badge-yellow { background:#713f12; color:#fde68a; border:1px solid #92400e; }
+    .badge-blue   { background:#1e3a5f; color:#bfdbfe; border:1px solid #1d4ed8; }
+    .badge-gray   { background:#1e293b; color:#94a3b8; border:1px solid #334155; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #334155; }
+    th { background: #0f172a; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    tr:hover td { background: #1e293b55; }
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer; border:none; transition:opacity 0.15s; }
+    .btn:hover { opacity: 0.85; }
+    .btn-red    { background:#991b1b; color:#fecaca; }
+    .btn-green  { background:#166534; color:#bbf7d0; }
+    .btn-orange { background:#92400e; color:#fde68a; }
+    .spinner { display:none; }
+    .loading .spinner { display:inline; }
+    #toast { position:fixed; bottom:24px; right:24px; z-index:999; pointer-events:none; }
+    .toast-msg { padding:10px 18px; border-radius:8px; margin-top:8px; font-size:0.85rem; font-weight:600; animation: fadeIn 0.2s ease; }
+    .toast-ok  { background:#166534; color:#bbf7d0; }
+    .toast-err { background:#7f1d1d; color:#fecaca; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- Header -->
+<header class="border-b border-slate-700 px-6 py-4 flex items-center justify-between sticky top-0 z-10" style="background:#0f172a;">
+  <div class="flex items-center gap-4">
+    <span class="text-xl font-bold text-white">AnalystTeam</span>
+    <span class="text-slate-500 text-sm">Dashboard</span>
+  </div>
+  <div class="flex items-center gap-3">
+    <!-- Paper Mode Badge -->
+    {% if paper_mode %}
+    <span class="badge-yellow px-3 py-1 rounded-full text-xs font-bold">PAPER MODE</span>
+    {% else %}
+    <span class="badge-red px-3 py-1 rounded-full text-xs font-bold animate-pulse">LIVE TRADING</span>
+    {% endif %}
+
+    <!-- Kill Switch Status + Toggle -->
+    <div class="flex items-center gap-2">
+      <span id="ks-badge" class="px-3 py-1 rounded-full text-xs font-bold
+        {% if kill_switch_active %}badge-red{% else %}badge-green{% endif %}">
+        {% if kill_switch_active %}KILL SWITCH ACTIVE{% else %}TRADING ACTIVE{% endif %}
+      </span>
+      {% if kill_switch_active %}
+      <button class="btn btn-green" onclick="deactivateKillSwitch()">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        Resume Trading
+      </button>
+      {% else %}
+      <button class="btn btn-red" onclick="activateKillSwitch()">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524L13.477 14.89zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"/></svg>
+        Halt Trading
+      </button>
+      {% endif %}
+    </div>
+
+    <!-- Auto-refresh indicator -->
+    <div class="flex items-center gap-2 text-slate-500 text-xs">
+      <span id="refresh-countdown">30s</span>
+      <span>auto-refresh</span>
+    </div>
+  </div>
+</header>
+
+<main class="px-6 py-6 max-w-screen-2xl mx-auto space-y-8">
+
+  <!-- Positions Section -->
+  <section>
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-base font-semibold text-white flex items-center gap-2">
+        Open Positions
+        <span id="pos-count" class="badge-gray px-2 py-0.5 rounded text-xs">—</span>
+      </h2>
+      <button class="btn btn-green text-xs" onclick="loadPositions()">
+        <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.898.632 5.002 5.002 0 00-9.186-2.197l1.18 1.18A1 1 0 015 9H2a1 1 0 01-1-1V5a1 1 0 011-1l1.172 1.172A7.002 7.002 0 0114 4.268V3a1 1 0 011-1h1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-.707-1.707l1.18-1.18A5.002 5.002 0 006.001 7.5H6a1 1 0 010 2H3a1 1 0 01-1-1V5z" clip-rule="evenodd"/></svg>
+        Refresh
+      </button>
+    </div>
+    <div class="rounded-xl overflow-hidden border border-slate-700" style="background:#1e293b;">
+      <table id="pos-table">
+        <thead>
+          <tr>
+            <th>Analyst</th>
+            <th>Symbol</th>
+            <th>Direction</th>
+            <th>Strike</th>
+            <th>Expiry</th>
+            <th>Qty</th>
+            <th>Avg Cost</th>
+            <th>Exit Strategy</th>
+            <th>Opened</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="pos-body">
+          <tr><td colspan="10" class="text-center text-slate-500 py-8">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Signals Section -->
+  <section>
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-base font-semibold text-white flex items-center gap-2">
+        Recent Signals
+        <span id="sig-count" class="badge-gray px-2 py-0.5 rounded text-xs">—</span>
+        <span class="text-slate-500 text-xs font-normal">(last 50, newest first)</span>
+      </h2>
+      <button class="btn btn-green text-xs" onclick="loadSignals()">
+        <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.898.632 5.002 5.002 0 00-9.186-2.197l1.18 1.18A1 1 0 015 9H2a1 1 0 01-1-1V5a1 1 0 011-1l1.172 1.172A7.002 7.002 0 0114 4.268V3a1 1 0 011-1h1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-.707-1.707l1.18-1.18A5.002 5.002 0 006.001 7.5H6a1 1 0 010 2H3a1 1 0 01-1-1V5z" clip-rule="evenodd"/></svg>
+        Refresh
+      </button>
+    </div>
+    <div class="rounded-xl overflow-hidden border border-slate-700" style="background:#1e293b;">
+      <table id="sig-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Analyst</th>
+            <th>Symbol</th>
+            <th>Direction</th>
+            <th>Strike</th>
+            <th>Expiry</th>
+            <th>Confidence</th>
+            <th>Risk</th>
+            <th>Status</th>
+            <th>Rejection Reason</th>
+          </tr>
+        </thead>
+        <tbody id="sig-body">
+          <tr><td colspan="10" class="text-center text-slate-500 py-8">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<!-- Toast container -->
+<div id="toast"></div>
+
+<!-- Kill Switch Modal -->
+<div id="ks-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+  <div class="rounded-xl border border-slate-600 p-6 w-full max-w-md" style="background:#1e293b;">
+    <h3 class="text-lg font-bold text-white mb-4">Halt Trading — Confirm</h3>
+    <label class="block text-sm text-slate-400 mb-2">Reason (required)</label>
+    <input id="ks-reason" type="text" placeholder="e.g. Abnormal market volatility"
+      class="w-full rounded-lg px-3 py-2 text-sm border border-slate-600 mb-4"
+      style="background:#0f172a; color:#e2e8f0;"
+      onkeydown="if(event.key==='Enter') confirmKillSwitch()" />
+    <div class="flex gap-3 justify-end">
+      <button class="btn btn-gray" onclick="closeModal()" style="background:#334155;color:#e2e8f0;">Cancel</button>
+      <button class="btn btn-red" onclick="confirmKillSwitch()">Activate Kill Switch</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────────────────────
+// Utility
+// ──────────────────────────────────────────────
+function showToast(msg, ok=true) {
+  const t = document.getElementById('toast');
+  const d = document.createElement('div');
+  d.className = 'toast-msg ' + (ok ? 'toast-ok' : 'toast-err');
+  d.textContent = msg;
+  t.appendChild(d);
+  setTimeout(() => d.remove(), 4000);
+}
+
+function statusBadge(status) {
+  const map = {
+    APPROVED:  ['badge-green',  'APPROVED'],
+    EXECUTED:  ['badge-green',  'EXECUTED'],
+    CLOSED:    ['badge-gray',   'CLOSED'],
+    PENDING:   ['badge-yellow', 'PENDING'],
+    REJECTED:  ['badge-red',    'REJECTED'],
+  };
+  const [cls, label] = map[status] || ['badge-gray', status || '—'];
+  return `<span class="${cls} px-2 py-0.5 rounded text-xs font-bold">${label}</span>`;
+}
+
+function dirBadge(dir) {
+  return dir === 'CALL'
+    ? '<span class="badge-green px-2 py-0.5 rounded text-xs font-bold">CALL</span>'
+    : '<span class="badge-red px-2 py-0.5 rounded text-xs font-bold">PUT</span>';
+}
+
+function fmtTime(ts) {
+  if (!ts) return '—';
+  try {
+    return new Date(ts).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  } catch { return ts; }
+}
+
+function fmtDate(ts) {
+  if (!ts) return '—';
+  try {
+    return new Date(ts).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  } catch { return ts; }
+}
+
+// ──────────────────────────────────────────────
+// Positions
+// ──────────────────────────────────────────────
+async function loadPositions() {
+  const tbody = document.getElementById('pos-body');
+  try {
+    const res = await fetch('/api/positions');
+    const data = await res.json();
+    document.getElementById('pos-count').textContent = data.length;
+
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center text-slate-500 py-8">No open positions</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.map(p => {
+      const exitStrategy = p.exit_rules?.strategy || '—';
+      const cost = p.avg_cost_per_share != null ? `$${Number(p.avg_cost_per_share).toFixed(2)}` : '—';
+      return `<tr>
+        <td class="text-slate-300 font-medium">${p.analyst_id || '—'}</td>
+        <td class="text-white font-bold">${p.symbol || '—'}</td>
+        <td>${dirBadge(p.direction)}</td>
+        <td class="text-slate-200">$${p.strike || '—'}</td>
+        <td class="text-slate-400 text-sm">${p.expiry || '—'}</td>
+        <td class="text-slate-300">${p.qty || '—'}</td>
+        <td class="text-slate-300">${cost} <span class="text-slate-500 text-xs">/ share</span></td>
+        <td><span class="badge-gray px-2 py-0.5 rounded text-xs">${exitStrategy}</span></td>
+        <td class="text-slate-400 text-sm">${fmtTime(p.opened_at)}</td>
+        <td>
+          <button class="btn btn-orange text-xs" onclick="closePosition('${p.position_id}', this)">
+            Close
+          </button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center text-red-400 py-8">Error loading positions: ${e.message}</td></tr>`;
+  }
+}
+
+async function closePosition(positionId, btn) {
+  if (!confirm('Manually close this position? This queues a close request for the monitor agent.')) return;
+  btn.disabled = true;
+  btn.textContent = 'Queuing…';
+  try {
+    const res = await fetch(`/api/positions/${positionId}/close`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({})});
+    const data = await res.json();
+    if (res.ok) {
+      showToast(`Close queued for ${positionId.slice(0,8)}…`);
+      setTimeout(loadPositions, 1000);
+    } else {
+      showToast(`Error: ${data.detail || 'unknown'}`, false);
+      btn.disabled = false;
+      btn.textContent = 'Close';
+    }
+  } catch(e) {
+    showToast(`Error: ${e.message}`, false);
+    btn.disabled = false;
+    btn.textContent = 'Close';
+  }
+}
+
+// ──────────────────────────────────────────────
+// Signals
+// ──────────────────────────────────────────────
+async function loadSignals() {
+  const tbody = document.getElementById('sig-body');
+  try {
+    const res = await fetch('/api/signals');
+    const data = await res.json();
+    document.getElementById('sig-count').textContent = data.length;
+
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center text-slate-500 py-8">No signals yet</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.map(s => {
+      const confidence = s.confidence != null ? `${Math.round(s.confidence * 100)}%` : '—';
+      const risk = s.risk_level || '—';
+      const riskCls = risk === 'HIGH' ? 'badge-red' : risk === 'MEDIUM' ? 'badge-yellow' : 'badge-green';
+      return `<tr>
+        <td class="text-slate-400 text-sm">${fmtTime(s.timestamp)}</td>
+        <td class="text-slate-300 font-medium">${s.analyst_id || '—'}</td>
+        <td class="text-white font-bold">${s.symbol || '—'}</td>
+        <td>${dirBadge(s.direction)}</td>
+        <td class="text-slate-200">$${s.strike || '—'}</td>
+        <td class="text-slate-400 text-sm">${s.expiry || '—'}</td>
+        <td class="text-slate-300">${confidence}</td>
+        <td><span class="${riskCls} px-2 py-0.5 rounded text-xs font-bold">${risk}</span></td>
+        <td>${statusBadge(s.status)}</td>
+        <td class="text-slate-400 text-sm max-w-xs truncate">${s.rejection_reason || ''}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center text-red-400 py-8">Error loading signals: ${e.message}</td></tr>`;
+  }
+}
+
+// ──────────────────────────────────────────────
+// Kill Switch
+// ──────────────────────────────────────────────
+function activateKillSwitch() {
+  document.getElementById('ks-reason').value = '';
+  document.getElementById('ks-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('ks-reason').focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('ks-modal').classList.add('hidden');
+}
+
+async function confirmKillSwitch() {
+  const reason = document.getElementById('ks-reason').value.trim();
+  if (!reason) { showToast('Please enter a reason', false); return; }
+  closeModal();
+  try {
+    const res = await fetch('/api/kill-switch/activate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({reason})
+    });
+    if (res.ok) {
+      showToast('Kill switch activated — trading halted');
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      const d = await res.json();
+      showToast(`Error: ${d.detail}`, false);
+    }
+  } catch(e) {
+    showToast(`Error: ${e.message}`, false);
+  }
+}
+
+async function deactivateKillSwitch() {
+  if (!confirm('Resume trading? This will deactivate the kill switch.')) return;
+  try {
+    const res = await fetch('/api/kill-switch/deactivate', {method:'POST'});
+    if (res.ok) {
+      showToast('Kill switch cleared — trading resumed');
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      const d = await res.json();
+      showToast(`Error: ${d.detail}`, false);
+    }
+  } catch(e) {
+    showToast(`Error: ${e.message}`, false);
+  }
+}
+
+// Close modal on backdrop click
+document.getElementById('ks-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ──────────────────────────────────────────────
+// Auto-refresh (30s)
+// ──────────────────────────────────────────────
+let countdown = 30;
+function tick() {
+  countdown--;
+  document.getElementById('refresh-countdown').textContent = countdown + 's';
+  if (countdown <= 0) {
+    countdown = 30;
+    loadPositions();
+    loadSignals();
+  }
+}
+setInterval(tick, 1000);
+
+// Initial load
+loadPositions();
+loadSignals();
+</script>
+</body>
+</html>

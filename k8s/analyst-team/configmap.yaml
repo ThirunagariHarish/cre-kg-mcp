@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: analyst-team-config
+  namespace: trading
+  labels:
+    app: analyst-team
+data:
+  # Safety — always default to paper mode in k8s; Doppler secret PAPER_TRADING_MODE
+  # must be explicitly set to "false" to go live.
+  PAPER_TRADING_MODE: "true"
+
+  # Position sizing hard limits (USD)
+  MAX_POSITION_SIZE_USD: "200"
+  MAX_DAILY_LOSS_USD: "500"
+
+  # Monitor Agent poll interval
+  MONITOR_POLL_INTERVAL_SECONDS: "30"
+
+  # TA check interval within monitor (seconds)
+  TA_CHECK_INTERVAL_SECONDS: "300"
+
+  # RL rule learner — how often to re-run (minutes)
+  MONITOR_RL_LEARN_INTERVAL_MINUTES: "60"
+
+  # File paths (relative to /app)
+  KILL_SWITCH_PATH: "shared/state/kill_switch.json"
+  OPEN_POSITIONS_PATH: "shared/state/open_positions.json"
+  MONITOR_RL_DATA_PATH: "shared/state/monitor_rl_data.jsonl"
+  MONITOR_RULES_PATH: "shared/state/monitor_rules.json"
+  TRADE_JOURNAL_PATH: "shared/state/trade_journal.jsonl"
+
+  # Logging
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"

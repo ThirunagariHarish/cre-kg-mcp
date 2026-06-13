@@ -1,0 +1,14 @@
+{
+  "analyst_id": "adi",
+  "display_name": "ADI Premium Alerts",
+  "source_layer": "DISCORD",
+  "wake_trigger": "DISCORD_MESSAGE",
+  "discord_channel_id": "1495517143599415507",
+  "allowed_symbols": ["SPX"],
+  "exit_rules": {
+    "strategy": "FIRST_SELL_FROM_SOURCE",
+    "source_channel_id": "1495517143599415507"
+  },
+  "execution_buffer_pct": 0.15,
+  "paper_mode": true
+}

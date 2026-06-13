@@ -1,0 +1,12 @@
+{
+  "analyst_id": "zabes",
+  "display_name": "Zabes Swing Trades",
+  "source_layer": "DISCORD",
+  "wake_trigger": "DISCORD_MESSAGE",
+  "discord_channel_id": "1495516822349414430",
+  "exit_rules": {
+    "strategy": "OWNER_FIRST_SELL",
+    "source_channel_id": "1495516822349414430"
+  },
+  "paper_mode": true
+}

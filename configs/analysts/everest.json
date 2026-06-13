@@ -1,0 +1,11 @@
+{
+  "analyst_id": "everest",
+  "display_name": "Everest Trades",
+  "source_layer": "DISCORD",
+  "wake_trigger": "DISCORD_MESSAGE",
+  "discord_channel_id": "EVEREST_CHANNEL_PLACEHOLDER",
+  "exit_rules": {"strategy": "MANUAL"},
+  "confidence_threshold": 0.65,
+  "paper_mode": true,
+  "notes": "MANUAL exit only. No auto-close."
+}

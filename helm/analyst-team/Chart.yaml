@@ -1,0 +1,14 @@
+apiVersion: v2
+name: analyst-team
+version: 1.0.0
+appVersion: "1.0.0"
+description: AnalystTeam multi-analyst trading system — Discord + UW + Technical analysts with Monitor Agent and RL rule tuner
+type: application
+keywords:
+- trading
+- options
+- discord
+- analyst
+maintainers:
+- name: AnalystTeam
+home: https://github.com/harishkumar/AnalystTeam

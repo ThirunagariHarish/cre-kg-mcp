@@ -1,0 +1,12 @@
+{
+  "analyst_id": "social_trends",
+  "source_layer": "SOCIAL",
+  "wake_trigger": "SCHEDULE",
+  "wake_interval_seconds": 600,
+  "exit_rules": {
+    "strategy": "TA_RULES"
+  },
+  "confidence_threshold": 0.60,
+  "min_evidence_items": 2,
+  "paper_mode": true
+}

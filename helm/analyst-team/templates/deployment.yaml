@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "analyst-team.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "analyst-team.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "analyst-team.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "analyst-team.selectorLabels" . | nindent 8 }}
+      {{- if .Values.metrics.enabled }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ .Values.metrics.port | quote }}
+        prometheus.io/path: {{ .Values.metrics.path | quote }}
+      {{- end }}
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: analyst-team
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command: ["python", "scripts/run_all_analysts.py"]
+        ports:
+        - name: dashboard
+          containerPort: {{ .Values.service.port }}
+          protocol: TCP
+        env:
+        - name: PAPER_TRADING_MODE
+          value: {{ .Values.paperMode | quote }}
+        - name: MAX_POSITION_SIZE_USD
+          value: {{ .Values.maxPositionSizeUsd | quote }}
+        - name: MAX_DAILY_LOSS_USD
+          value: {{ .Values.maxDailyLossUsd | quote }}
+        - name: LOG_LEVEL
+          value: {{ .Values.log.level | quote }}
+        - name: LOG_FORMAT
+          value: {{ .Values.log.format | quote }}
+        - name: MONITOR_POLL_INTERVAL_SECONDS
+          value: {{ .Values.monitor.pollIntervalSeconds | quote }}
+        - name: TA_CHECK_INTERVAL_SECONDS
+          value: {{ .Values.monitor.taCheckIntervalSeconds | quote }}
+        - name: MONITOR_RL_LEARN_INTERVAL_MINUTES
+          value: {{ .Values.monitor.rlLearnIntervalMinutes | quote }}
+        envFrom:
+        - secretRef:
+            name: {{ .Values.doppler.secretName }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        {{- if .Values.persistence.enabled }}
+        volumeMounts:
+        - name: shared-state
+          mountPath: /app/shared/state
+        {{- end }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.service.port }}
+          initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.service.port }}
+          initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+      - name: shared-state
+        persistentVolumeClaim:
+          claimName: {{ include "analyst-team.fullname" . }}-state
+      {{- end }}
+---
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "analyst-team.fullname" . }}-state
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "analyst-team.labels" . | nindent 4 }}
+spec:
+  accessModes:
+  - {{ .Values.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size }}
+  {{- if .Values.persistence.storageClass }}
+  storageClassName: {{ .Values.persistence.storageClass }}
+  {{- end }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "analyst-team.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "analyst-team.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "analyst-team.selectorLabels" . | nindent 4 }}
+  ports:
+  - name: dashboard
+    port: {{ .Values.service.port }}
+    targetPort: {{ .Values.service.port }}
+    protocol: TCP

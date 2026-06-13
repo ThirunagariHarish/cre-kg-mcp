@@ -1,0 +1,28 @@
+{
+  "analyst_id": "technical_ta",
+  "display_name": "Technical Analyst (SPY/SPX)",
+  "source_layer": "TECHNICAL",
+  "wake_trigger": "SCHEDULE",
+  "wake_interval_seconds": 300,
+  "symbols": ["SPY"],
+  "exit_rules": {
+    "strategy": "TA_RULES"
+  },
+  "min_evidence_items": 3,
+  "confidence_threshold": 0.60,
+  "bullish_threshold": 0.65,
+  "bearish_threshold": 0.35,
+  "indicators": {
+    "fvg": {"weight": 0.20, "lookback_bars": 20, "band_pct": 0.005},
+    "vwap": {"weight": 0.15, "deviation_pct": 0.003},
+    "obv": {"weight": 0.15, "slope_window": 5},
+    "cvd": {"weight": 0.15, "slope_window": 5},
+    "vix": {"weight": 0.15, "low_threshold": 20.0, "high_threshold": 25.0},
+    "put_call_ratio": {"weight": 0.20, "bullish_threshold": 0.7, "bearish_threshold": 1.3}
+  },
+  "output": {
+    "ta_signal_path": "shared/state/ta_signal.json"
+  },
+  "paper_mode": true,
+  "notes": "Pure technical analysis for SPY. Writes ta_signal.json every 5 min for MonitorAgent (TA_RULES exit) and MasterAnalyst. Emits TradeSignal only when score >= 0.65 (CALL) or <= 0.35 (PUT)."
+}

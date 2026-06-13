@@ -1,0 +1,30 @@
+{
+  "analyst_id": "spy_spx_uw",
+  "display_name": "SPY/SPX Unusual Whales",
+  "source_layer": "UNUSUAL_WHALES",
+  "wake_trigger": "SCHEDULE",
+  "wake_interval_seconds": 300,
+  "allowed_symbols": ["SPY"],
+  "exit_rules": {
+    "strategy": "TA_RULES"
+  },
+  "indicators": {
+    "call_put_ratio_bullish_threshold": 1.2,
+    "call_put_ratio_bearish_threshold": 0.8,
+    "volume_multiplier_threshold": 3.0,
+    "vix_low_fear_threshold": 20.0
+  },
+  "decision_thresholds": {
+    "bullish_score_call": 0.60,
+    "bullish_score_put": 0.40
+  },
+  "contract_selection": {
+    "symbol": "SPY",
+    "strike_rounding": 1.0,
+    "expiry": "nearest_friday"
+  },
+  "min_evidence_items": 3,
+  "confidence_threshold": 0.60,
+  "paper_mode": true,
+  "notes": "Market-wide UW signals. Wakes every 5 min during RTH. Score >= 0.60 -> CALL, <= 0.40 -> PUT, else no signal. Exit delegated to Technical Analyst (TA_RULES)."
+}

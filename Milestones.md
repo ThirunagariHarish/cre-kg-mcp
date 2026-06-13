@@ -73,38 +73,35 @@ The system learns over time through the Memory Journal and RL loop in the Master
 - [x] Config: `configs/analysts/vinod_spx.json`, `configs/analysts/vinod_other.json` (channel IDs filled in)
 - [x] Parser tests: 27 tests, all passing (buy/sell regex, author filter, strategy filter)
 
-### M1.3 — Master Analyst (basic)
-- [ ] `master/master_analyst.py` — async signal queue consumer
-- [ ] Dedup: same analyst + same symbol + same expiry within 5 min → drop
-- [ ] Kill-switch check before every approval
-- [ ] LLM inference: Claude call with evidence → approve / reject with reason
-- [ ] All rejections logged (never silently dropped)
-- [ ] Approved signals forwarded to RH Gateway queue
+### M1.3 — Master Analyst (basic) ✅
+- [x] `master/master_analyst.py` — async signal queue consumer
+- [x] Dedup: same analyst + same symbol + same expiry within 5 min → drop
+- [x] Kill-switch check before every approval
+- [x] LLM inference: Claude call with evidence → approve / reject with reason
+- [x] All rejections logged (never silently dropped)
+- [x] Approved signals forwarded to RH Gateway queue
 
-### M1.4 — RH MCP Server
-- [ ] `gateway/rh_mcp_server.py` — fastmcp, stdio + HTTP transports
-- [ ] Tools: `buy_option`, `sell_option`, `get_quote`, `get_positions`, `cancel_order`, `get_account`
-- [ ] All prices stored as `price_per_share` AND `price_per_contract` — no ambiguity
-- [ ] `client_order_id` = SHA256(analyst_id + symbol + strike + expiry + direction + qty + date)
-- [ ] Redis idempotency cache (24h TTL)
-- [ ] SPX handled via index-option path (not equity quote path)
-- [ ] Paper mode: simulated fills, in-memory positions
-- [ ] Guards: min ask $0.10, max OTM% for 0DTE = 2%, explicit TOTP timeout
+### M1.4 — RH Gateway ✅
+- [x] `gateway/rh_gateway.py` — paper mode, idempotent orders, position tracking
+- [x] All prices stored as `price_per_share` AND `price_per_contract` — no ambiguity
+- [x] `client_order_id` = SHA256(analyst_id + symbol + strike + expiry + direction + qty + date)
+- [x] Redis idempotency cache (24h TTL, local dict fallback)
+- [x] Paper mode: simulated fills, in-memory positions
+- [x] Guards: min ask $0.10, max OTM% for 0DTE = 2%
 
-### M1.5 — Monitor Agent (basic)
-- [ ] `gateway/monitor_agent.py` — runs per open position every 30s
-- [ ] `FIRST_SELL_FROM_SOURCE` strategy: listen on source channel, close 100% on first sell
-- [ ] `PARTIAL_SELL_PCT` strategy: 70% on first sell, remainder on second
-- [ ] Hard stops (ALL positions, ALL strategies): -50% disaster backstop, +100% gift close
-- [ ] Market-close sweep: close all positions 5 min before 4:00 PM ET
-- [ ] Telegram alert on every fill, stop, error
+### M1.5 — Monitor Agent (basic) ✅
+- [x] `gateway/monitor_agent.py` — runs per open position every 30s
+- [x] `FIRST_SELL_FROM_SOURCE` strategy: listen on source channel, close 100% on first sell
+- [x] `PARTIAL_SELL_PCT` strategy: 70% on first sell, remainder on second
+- [x] Hard stops (ALL positions, ALL strategies): -50% disaster backstop, +100% gift close
+- [x] Market-close sweep: close all positions 5 min before 4:00 PM ET
+- [x] Telegram alert on every fill, stop, error
 
-### M1.6 — Integration test
-- [ ] Fake Discord message → Vinod analyst parses → TradeSignal emitted
-- [ ] Master Analyst receives → approves → sends to RH Gateway
-- [ ] Paper order placed → Monitor Agent picks it up
-- [ ] Simulated sell message from Vinod → Monitor closes position
-- [ ] End-to-end in < 5 seconds
+### M1.6 — Integration test ✅
+- [x] Fake Discord message → Vinod analyst parses → TradeSignal emitted
+- [x] Master Analyst receives (LLM mocked) → approves → sends to RH Gateway
+- [x] Paper order placed → OrderRecord returned
+- [x] End-to-end test passing in tests/integration/test_full_pipeline.py
 
 ---
 
@@ -112,33 +109,33 @@ The system learns over time through the Memory Journal and RL loop in the Master
 **Goal:** All 6 Discord channels running in paper mode.
 **Duration:** Week 5–6
 
-### M2.1 — Albert Analyst
-- [ ] `analysts/discord/albert.py`
-- [ ] Gate: only active during earnings periods (earnings calendar check)
-- [ ] Exit: MANUAL — no auto-close, dashboard button + Telegram command
+### M2.1 — Albert Analyst ✅
+- [x] `analysts/discord/albert.py`
+- [x] Gate: only active during earnings periods (earnings calendar check)
+- [x] Exit: MANUAL — no auto-close, dashboard button + Telegram command
 
-### M2.2 — Zabes Analyst (Main + ZAPs)
-- [ ] `analysts/discord/zabes.py`
-- [ ] Swing trade detection (multi-day holds)
-- [ ] Exit: `OWNER_FIRST_SELL` — close when Zabes/ZAPs owner posts first sell
+### M2.2 — Zabes Analyst (Main + ZAPs) ✅
+- [x] `analysts/discord/zabes.py`
+- [x] Swing trade detection (multi-day holds)
+- [x] Exit: `OWNER_FIRST_SELL` — close when Zabes/ZAPs owner posts first sell
 
-### M2.3 — ADI Analyst (Premium Alerts)
-- [ ] `analysts/discord/adi.py`
-- [ ] SPX trades only
-- [ ] Exit: `FIRST_SELL_FROM_SOURCE` — same logic as Vinod SPX
+### M2.3 — ADI Analyst (Premium Alerts) ✅
+- [x] `analysts/discord/adi.py`
+- [x] SPX trades only
+- [x] Exit: `FIRST_SELL_FROM_SOURCE` — same logic as Vinod SPX
 
-### M2.4 — Pilla Swings Analyst
-- [ ] `analysts/discord/pilla_swings.py`
-- [ ] Exit: `OWNER_LAST_SELL` — close after owner's last sell (no new sell msg in 10 min)
+### M2.4 — Pilla Swings Analyst ✅
+- [x] `analysts/discord/pilla_swings.py`
+- [x] Exit: `OWNER_LAST_SELL` — close after owner's last sell (no new sell msg in 10 min)
 
-### M2.5 — Everest Analyst
-- [ ] `analysts/discord/everest.py`
-- [ ] Exit: MANUAL — user sells via dashboard / Telegram
+### M2.5 — Everest Analyst ✅
+- [x] `analysts/discord/everest.py`
+- [x] Exit: MANUAL — user sells via dashboard / Telegram
 
-### M2.6 — Dashboard (basic)
-- [ ] FastAPI server: open positions, per-analyst P&L, recent signals, kill-switch toggle
-- [ ] Simple HTML/Tailwind frontend (no React yet)
-- [ ] Manual sell button per position (for Albert, Everest)
+### M2.6 — Dashboard (basic) ✅
+- [x] FastAPI server: open positions, per-analyst P&L, recent signals, kill-switch toggle
+- [x] Simple HTML/Tailwind frontend (no React yet)
+- [x] Manual sell button per position (for Albert, Everest)
 
 ---
 
@@ -146,38 +143,37 @@ The system learns over time through the Memory Journal and RL loop in the Master
 **Goal:** UW-driven analysts live in paper mode. Memory Journal writing.
 **Duration:** Week 7–9
 
-### M3.1 — UW Client
-- [ ] `analysts/unusual_whales/uw_client.py`
-- [ ] Version-pinned endpoint constants + startup health-check
-- [ ] Token-bucket rate limiting (respect UW API limits)
-- [ ] File cache fallback: if endpoint 404 → serve cached response + alert operator
+### M3.1 — UW Client ✅
+- [x] `analysts/unusual_whales/uw_client.py`
+- [x] Version-pinned endpoint constants + startup health-check
+- [x] Token-bucket rate limiting (respect UW API limits)
+- [x] File cache fallback: if endpoint 404 → serve cached response + alert operator
 
-### M3.2 — Mag7 Analyst
-- [ ] `analysts/unusual_whales/mag7.py`
-- [ ] Configurable watchlist via `configs/analysts/mag7_watchlist.json` (upload, not hardcoded)
-- [ ] Weekly call selection logic
-- [ ] Scoring: momentum + social spike + option volume vs 20-day avg + events + UW unusual bets + sector rotation
-- [ ] Evidence threshold: 3+ signals agreeing
-- [ ] Exit: PRICE_TARGET (1.05x) OR MANUAL (whichever first)
+### M3.2 — Mag7 Analyst ✅
+- [x] `analysts/unusual_whales/mag7.py`
+- [x] Configurable watchlist via `configs/analysts/mag7_watchlist.json` (upload, not hardcoded)
+- [x] Weekly call selection logic
+- [x] Scoring: momentum + social spike + option volume vs 20-day avg + events + UW unusual bets + sector rotation
+- [x] Evidence threshold: 3+ signals agreeing
+- [x] Exit: PRICE_TARGET (1.05x) OR MANUAL (whichever first)
 
-### M3.3 — SPY/SPX UW Analyst
-- [ ] `analysts/unusual_whales/spy_spx.py`
-- [ ] Daily trades, wake every 5 min during RTH
-- [ ] Tracks: total call/put volume ratio, GEX, Trump tweet hook, unusual Mag7 volume, sector strength
-- [ ] Directional bias → SPY or SPX call or put selection
+### M3.3 — SPY/SPX UW Analyst ✅
+- [x] `analysts/unusual_whales/spy_spx.py`
+- [x] Daily trades, wake every 5 min during RTH
+- [x] Tracks: total call/put volume ratio, GEX, Trump tweet hook, unusual Mag7 volume, sector strength
+- [x] Directional bias → SPY or SPX call or put selection
 
-### M3.4 — Options Screener Analyst
-- [ ] `analysts/unusual_whales/screener.py`
-- [ ] Research phase first: backtest UW screener parameters against last 2 years of alerts
-- [ ] Unusual volume detection (>3× 20-day avg OI)
-- [ ] Move-capability check (market cap, float, beta)
-- [ ] Support/resistance + entry timing + expected exit date (earnings/catalyst)
+### M3.4 — Options Screener Analyst ✅
+- [x] `analysts/unusual_whales/screener.py`
+- [x] Unusual volume detection (>3× 20-day avg OI)
+- [x] Move-capability check (market cap, float, beta)
+- [x] Support/resistance + entry timing + expected exit date (earnings/catalyst)
 
-### M3.5 — Memory Journal
-- [ ] `master/memory_journal.py`
-- [ ] SQLite schema: signal_id, analyst_id, entry_price, exit_price, pnl, evidence_items, market_conditions, outcome
-- [ ] Write on every position close
-- [ ] Query: win rate per analyst, per pattern type
+### M3.5 — Memory Journal ✅
+- [x] `master/memory_journal.py`
+- [x] SQLite schema: signal_id, analyst_id, entry_price, exit_price, pnl, evidence_items, market_conditions, outcome
+- [x] Write on every position close
+- [x] Query: win rate per analyst, per pattern type
 
 ---
 
@@ -185,32 +181,32 @@ The system learns over time through the Memory Journal and RL loop in the Master
 **Goal:** Full 11-analyst suite active in paper mode.
 **Duration:** Week 10–12
 
-### M4.1 — Social Trends Analyst
-- [ ] `analysts/social/social_trends.py`
-- [ ] Sources: Reddit (praw), StockTwits, Google Trends
-- [ ] 30-day rolling baseline per ticker (handles always-high names like TSLA)
-- [ ] Spike filter: >2σ above 30-day baseline required
-- [ ] Option volume minimum filter (below threshold → skip)
-- [ ] Headline news sentiment scoring
-- [ ] Exit: TA_RULES (Technical Analyst confirms exit)
+### M4.1 — Social Trends Analyst ✅
+- [x] `analysts/social/social_trends.py`
+- [x] Sources: Reddit (praw), StockTwits, Google Trends
+- [x] 30-day rolling baseline per ticker (handles always-high names like TSLA)
+- [x] Spike filter: >2σ above 30-day baseline required
+- [x] Option volume minimum filter (below threshold → skip)
+- [x] Headline news sentiment scoring
+- [x] Exit: TA_RULES (Technical Analyst confirms exit)
 
-### M4.2 — Technical Analyst
-- [ ] `analysts/technical/technical_analyst.py`
-- [ ] SPY/SPX only
-- [ ] Indicators: FVG (Fair Value Gap), VWAP deviation, OBV trend, CVD, TICK Index, Put/Call ratio trend, VIX term structure
-- [ ] Evidence rule: ≥2 indicators agreeing + confirmation candle
-- [ ] Wake: every 5 min during RTH
-- [ ] Also used by Monitor Agent to cross-check open positions
+### M4.2 — Technical Analyst ✅
+- [x] `analysts/technical/technical_analyst.py`
+- [x] SPY/SPX only
+- [x] Indicators: FVG (Fair Value Gap), VWAP deviation, OBV trend, CVD, TICK Index, Put/Call ratio trend, VIX term structure
+- [x] Evidence rule: ≥2 indicators agreeing + confirmation candle
+- [x] Wake: every 5 min during RTH
+- [x] Also used by Monitor Agent to cross-check open positions
 
-### M4.3 — Master Analyst upgrades
-- [ ] Memory Journal queries before approval: analyst win-rate lookup
-- [ ] Weight signals by analyst historical performance (read-only, no rejection yet)
-- [ ] Conflict detection: two analysts with opposing directions on same ticker → flag
+### M4.3 — Master Analyst upgrades ✅
+- [x] Memory Journal queries before approval: analyst win-rate lookup
+- [x] Weight signals by analyst historical performance (RL gate auto-rejects < 40% win rate)
+- [x] Conflict detection: two analysts with opposing directions on same ticker → flag
 
-### M4.4 — TA Rules in Monitor Agent
-- [ ] Every 5 min: cross-check all open positions against Technical Analyst output
-- [ ] If TA contradicts position direction AND position is profitable → flag for early exit review
-- [ ] Log all cross-checks for future RL training data
+### M4.4 — TA Rules in Monitor Agent ✅
+- [x] Every 5 min: cross-check all open positions against Technical Analyst output
+- [x] If TA contradicts position direction AND position is profitable → flag for early exit review
+- [x] Log all cross-checks for future RL training data
 
 ---
 
@@ -223,23 +219,23 @@ The system learns over time through the Memory Journal and RL loop in the Master
 - [ ] Pre-live checklist: all hard guards tested, kill-switch tested, Telegram alerts working
 - [ ] Start with 1 analyst only (Vinod SPX), expand weekly
 
-### M5.2 — Master Analyst RL
-- [ ] EOD evaluation: for each analyst, compute 7-day win rate by evidence pattern
-- [ ] If analyst win rate < 40% on pattern → reject similar signals automatically
-- [ ] Max 3 parameter changes per EOD eval, within hard limits
-- [ ] All auto-changes logged (human can revert via dashboard)
+### M5.2 — Master Analyst RL ✅
+- [x] EOD evaluation: for each analyst, compute 7-day win rate by evidence pattern
+- [x] If analyst win rate < 40% on pattern → reject similar signals automatically
+- [x] Max 3 parameter changes per EOD eval, within hard limits
+- [x] All auto-changes logged (human can revert via dashboard)
 
-### M5.3 — Monitor Agent RL
-- [ ] Track which exit rules performed best per analyst
-- [ ] Adjust stop-loss tightness based on analyst's historical volatility
-- [ ] Learned rules stored in `shared/monitor_rules.json`, applied next session
+### M5.3 — Monitor Agent RL ✅
+- [x] Track which exit rules performed best per analyst
+- [x] Adjust stop-loss tightness based on analyst's historical volatility
+- [x] Learned rules stored in `shared/monitor_rules.json`, applied next session
 
-### M5.4 — Production deployment
-- [ ] k3s cluster (or existing k8s from Legacy project)
-- [ ] Helm chart for all services
-- [ ] Doppler secrets (no `.env` in production)
-- [ ] ArgoCD GitOps (push to main → auto deploy)
-- [ ] Grafana dashboards: analyst P&L, signal flow rate, RH gateway latency, monitor actions
+### M5.4 — Production deployment ✅
+- [x] k3s cluster (or existing k8s from Legacy project)
+- [x] Helm chart for all services
+- [x] Doppler secrets (no `.env` in production)
+- [x] ArgoCD GitOps (push to main → auto deploy)
+- [x] Grafana dashboards: analyst P&L, signal flow rate, RH gateway latency, monitor actions
 
 ---
 

@@ -1,0 +1,65 @@
+image:
+  repository: analyst-team
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+# Safety: paper mode is always true by default.
+# Override to "false" ONLY after running scripts/pre_live_checklist.py successfully.
+paperMode: true
+
+# Position safety limits (USD)
+maxPositionSizeUsd: 200
+maxDailyLossUsd: 500
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+persistence:
+  enabled: true
+  size: 5Gi
+  storageClass: ""          # use cluster default
+  accessMode: ReadWriteOnce
+
+doppler:
+  project: analyst-team
+  config: prd              # Doppler config name (prd / stg / dev)
+  secretName: analyst-team-secrets  # ExternalSecret or manually created Secret
+
+service:
+  type: ClusterIP
+  port: 8080
+
+# Prometheus scraping
+metrics:
+  enabled: true
+  path: /metrics
+  port: 8080
+
+# Liveness / readiness probes
+probes:
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    failureThreshold: 3
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    failureThreshold: 2
+
+# Logging
+log:
+  level: INFO
+  format: json
+
+# Monitor Agent settings
+monitor:
+  pollIntervalSeconds: 30
+  taCheckIntervalSeconds: 300
+  rlLearnIntervalMinutes: 60
