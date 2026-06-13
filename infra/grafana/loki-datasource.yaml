@@ -1,0 +1,15 @@
+apiVersion: 1
+datasources:
+  - name: Loki
+    type: loki
+    url: http://loki:3100
+    access: proxy
+    isDefault: false
+    jsonData:
+      derivedFields:
+        - name: analyst_id
+          matcherRegex: '"analyst_id":"([^"]+)"'
+          url: ''
+        - name: signal_id
+          matcherRegex: '"signal_id":"([^"]+)"'
+          url: ''

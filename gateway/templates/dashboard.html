@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AnalystTeam Dashboard</title>
+  <title>AnalystTeam Dashboard v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -11,394 +13,663 @@
       theme: {
         extend: {
           colors: {
-            surface: '#0f172a',
-            card:    '#1e293b',
-            border:  '#334155',
+            surface: '#0F172A',
+            card:    '#1E293B',
+            border2: '#334155',
+            accent:  '#6366F1'
           }
         }
       }
     }
   </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <style>
-    body { background: #0f172a; color: #e2e8f0; font-family: ui-monospace, SFMono-Regular, monospace; }
-    .badge-green  { background:#166534; color:#bbf7d0; border:1px solid #15803d; }
-    .badge-red    { background:#7f1d1d; color:#fecaca; border:1px solid #991b1b; }
-    .badge-yellow { background:#713f12; color:#fde68a; border:1px solid #92400e; }
-    .badge-blue   { background:#1e3a5f; color:#bfdbfe; border:1px solid #1d4ed8; }
-    .badge-gray   { background:#1e293b; color:#94a3b8; border:1px solid #334155; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #334155; }
-    th { background: #0f172a; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    tr:hover td { background: #1e293b55; }
-    .btn { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:6px; font-size:0.8rem; font-weight:600; cursor:pointer; border:none; transition:opacity 0.15s; }
-    .btn:hover { opacity: 0.85; }
-    .btn-red    { background:#991b1b; color:#fecaca; }
-    .btn-green  { background:#166534; color:#bbf7d0; }
-    .btn-orange { background:#92400e; color:#fde68a; }
-    .spinner { display:none; }
-    .loading .spinner { display:inline; }
-    #toast { position:fixed; bottom:24px; right:24px; z-index:999; pointer-events:none; }
-    .toast-msg { padding:10px 18px; border-radius:8px; margin-top:8px; font-size:0.85rem; font-weight:600; animation: fadeIn 0.2s ease; }
-    .toast-ok  { background:#166534; color:#bbf7d0; }
-    .toast-err { background:#7f1d1d; color:#fecaca; }
-    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #0F172A; color: #E2E8F0; }
+    .card { background: #1E293B; border: 1px solid #334155; border-radius: 12px; }
+    .badge { display:inline-flex; align-items:center; padding: 2px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+    .badge-call     { background:#064E3B; color:#6EE7B7; border:1px solid #047857; }
+    .badge-put      { background:#7F1D1D; color:#FCA5A5; border:1px solid #B91C1C; }
+    .badge-active   { background:#064E3B; color:#6EE7B7; border:1px solid #047857; }
+    .badge-paused   { background:#1E293B; color:#94A3B8; border:1px solid #334155; }
+    .badge-idle     { background:#451A03; color:#FCD34D; border:1px solid #92400E; }
+    .badge-approved { background:#1E3A5F; color:#93C5FD; border:1px solid #1D4ED8; }
+    .badge-rejected { background:#450A0A; color:#FCA5A5; border:1px solid #7F1D1D; }
+    .badge-dup      { background:#1E293B; color:#64748B; border:1px solid #475569; }
+    .pnl-positive { color: #10B981; }
+    .pnl-negative { color: #EF4444; }
+    .pnl-bar-container { width:80px; height:8px; background:#1E293B; border-radius:4px; overflow:hidden; display:inline-flex; vertical-align:middle; }
+    .pnl-bar-fill { height:100%; border-radius:4px; transition:width 0.5s; }
+    .ks-active  { background:#7F1D1D; color:#FCA5A5; border-color:#B91C1C; }
+    .ks-healthy { background:#064E3B; color:#6EE7B7; border-color:#047857; }
+    .analyst-card { cursor:pointer; transition:border-color 0.2s, transform 0.1s; }
+    .analyst-card:hover { transform:translateY(-1px); }
+    .alert-critical { color:#EF4444; animation:pulse 2s infinite; }
+    .alert-warning  { color:#F59E0B; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+    tr:hover td { background:rgba(99,102,241,0.05); }
+    .toast-container { position:fixed; bottom:24px; right:24px; z-index:1000; display:flex; flex-direction:column; gap:8px; }
+    .toast { padding:12px 20px; border-radius:8px; font-size:13px; font-weight:600; animation:slideIn 0.2s ease; }
+    .toast-ok  { background:#065F46; color:#A7F3D0; border:1px solid #047857; }
+    .toast-err { background:#7F1D1D; color:#FECACA; border:1px solid #B91C1C; }
+    @keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; display:flex; align-items:center; justify-content:center; }
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-track { background:#0F172A; }
+    ::-webkit-scrollbar-thumb { background:#334155; border-radius:3px; }
+    table { border-collapse: collapse; width:100%; }
+    th { background:#0F172A; color:#64748B; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; padding:10px 14px; text-align:left; border-bottom:1px solid #334155; }
+    td { padding:10px 14px; border-bottom:1px solid #1E3A5F22; font-size:0.82rem; vertical-align:middle; }
+    .tab-btn { padding:6px 18px; border-radius:8px; font-size:0.82rem; font-weight:500; cursor:pointer; transition:background 0.15s,color 0.15s; border:none; color:#94A3B8; background:transparent; }
+    .tab-btn.active { background:#6366F1; color:#fff; }
+    .tab-btn:hover:not(.active) { background:#1E293B; color:#E2E8F0; }
+    .ws-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+    .ws-dot.connected { background:#10B981; box-shadow:0 0 6px #10B98180; }
+    .ws-dot.reconnecting { background:#F59E0B; animation:pulse 1.5s infinite; }
+    .analyst-left-bar { width:3px; border-radius:0 0 0 3px; position:absolute; left:0; top:0; bottom:0; }
   </style>
 </head>
-<body class="min-h-screen">
+<body class="min-h-screen" x-data="app()" @keydown.escape.window="showKillModal=false; showDeactivateModal=false">
 
-<!-- Header -->
-<header class="border-b border-slate-700 px-6 py-4 flex items-center justify-between sticky top-0 z-10" style="background:#0f172a;">
-  <div class="flex items-center gap-4">
-    <span class="text-xl font-bold text-white">AnalystTeam</span>
-    <span class="text-slate-500 text-sm">Dashboard</span>
-  </div>
+<!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
+<header class="sticky top-0 z-10 border-b border-slate-700 px-6 py-3 flex items-center justify-between" style="background:#0F172A;">
+  <!-- Left: branding + WS dot -->
   <div class="flex items-center gap-3">
-    <!-- Paper Mode Badge -->
-    {% if paper_mode %}
-    <span class="badge-yellow px-3 py-1 rounded-full text-xs font-bold">PAPER MODE</span>
-    {% else %}
-    <span class="badge-red px-3 py-1 rounded-full text-xs font-bold animate-pulse">LIVE TRADING</span>
-    {% endif %}
+    <span class="text-xl font-bold text-white tracking-tight">⚡ AnalystTeam</span>
+    <span class="ws-dot" :class="wsConnected ? 'connected' : 'reconnecting'"></span>
+    <span class="text-xs" :class="wsConnected ? 'text-emerald-400' : 'text-amber-400'" x-text="wsConnected ? 'Live' : 'Reconnecting…'"></span>
+  </div>
 
-    <!-- Kill Switch Status + Toggle -->
-    <div class="flex items-center gap-2">
-      <span id="ks-badge" class="px-3 py-1 rounded-full text-xs font-bold
-        {% if kill_switch_active %}badge-red{% else %}badge-green{% endif %}">
-        {% if kill_switch_active %}KILL SWITCH ACTIVE{% else %}TRADING ACTIVE{% endif %}
-      </span>
-      {% if kill_switch_active %}
-      <button class="btn btn-green" onclick="deactivateKillSwitch()">
-        <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-        Resume Trading
-      </button>
-      {% else %}
-      <button class="btn btn-red" onclick="activateKillSwitch()">
-        <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524L13.477 14.89zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"/></svg>
-        Halt Trading
-      </button>
-      {% endif %}
-    </div>
+  <!-- Center: tabs -->
+  <div class="flex items-center gap-1">
+    <button class="tab-btn" :class="activeTab==='positions' ? 'active' : ''" @click="activeTab='positions'">Positions</button>
+    <button class="tab-btn" :class="activeTab==='analysts'  ? 'active' : ''" @click="activeTab='analysts'">Analysts</button>
+    <button class="tab-btn" :class="activeTab==='signals'   ? 'active' : ''" @click="activeTab='signals'">Signals</button>
+    <button class="tab-btn" :class="activeTab==='accounts'  ? 'active' : ''" @click="activeTab='accounts'">Accounts</button>
+  </div>
 
-    <!-- Auto-refresh indicator -->
-    <div class="flex items-center gap-2 text-slate-500 text-xs">
-      <span id="refresh-countdown">30s</span>
-      <span>auto-refresh</span>
-    </div>
+  <!-- Right: badges + kill switch -->
+  <div class="flex items-center gap-3">
+    <!-- Paper/Live badge -->
+    <span x-show="state.paper_mode"  class="badge" style="background:#451A03;color:#FCD34D;border:1px solid #92400E;">PAPER</span>
+    <span x-show="!state.paper_mode" class="badge alert-critical" style="background:#7F1D1D;color:#FCA5A5;border:1px solid #B91C1C;">LIVE</span>
+
+    <!-- Kill switch -->
+    <template x-if="state.kill_switch && state.kill_switch.active">
+      <button @click="showDeactivateModal=true"
+        class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border ks-active transition-all hover:opacity-80">
+        🔴 KILL SWITCH ACTIVE
+      </button>
+    </template>
+    <template x-if="!state.kill_switch || !state.kill_switch.active">
+      <button @click="showKillModal=true"
+        class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border ks-healthy transition-all hover:opacity-80">
+        ☑ System Healthy
+      </button>
+    </template>
+
+    <!-- Last updated -->
+    <span class="text-xs text-slate-500" x-text="'Updated ' + timeAgo(state.updated_at)"></span>
   </div>
 </header>
 
-<main class="px-6 py-6 max-w-screen-2xl mx-auto space-y-8">
-
-  <!-- Positions Section -->
-  <section>
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="text-base font-semibold text-white flex items-center gap-2">
-        Open Positions
-        <span id="pos-count" class="badge-gray px-2 py-0.5 rounded text-xs">—</span>
-      </h2>
-      <button class="btn btn-green text-xs" onclick="loadPositions()">
-        <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.898.632 5.002 5.002 0 00-9.186-2.197l1.18 1.18A1 1 0 015 9H2a1 1 0 01-1-1V5a1 1 0 011-1l1.172 1.172A7.002 7.002 0 0114 4.268V3a1 1 0 011-1h1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-.707-1.707l1.18-1.18A5.002 5.002 0 006.001 7.5H6a1 1 0 010 2H3a1 1 0 01-1-1V5z" clip-rule="evenodd"/></svg>
-        Refresh
-      </button>
-    </div>
-    <div class="rounded-xl overflow-hidden border border-slate-700" style="background:#1e293b;">
-      <table id="pos-table">
-        <thead>
-          <tr>
-            <th>Analyst</th>
-            <th>Symbol</th>
-            <th>Direction</th>
-            <th>Strike</th>
-            <th>Expiry</th>
-            <th>Qty</th>
-            <th>Avg Cost</th>
-            <th>Exit Strategy</th>
-            <th>Opened</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="pos-body">
-          <tr><td colspan="10" class="text-center text-slate-500 py-8">Loading...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- Signals Section -->
-  <section>
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="text-base font-semibold text-white flex items-center gap-2">
-        Recent Signals
-        <span id="sig-count" class="badge-gray px-2 py-0.5 rounded text-xs">—</span>
-        <span class="text-slate-500 text-xs font-normal">(last 50, newest first)</span>
-      </h2>
-      <button class="btn btn-green text-xs" onclick="loadSignals()">
-        <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.898.632 5.002 5.002 0 00-9.186-2.197l1.18 1.18A1 1 0 015 9H2a1 1 0 01-1-1V5a1 1 0 011-1l1.172 1.172A7.002 7.002 0 0114 4.268V3a1 1 0 011-1h1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-.707-1.707l1.18-1.18A5.002 5.002 0 006.001 7.5H6a1 1 0 010 2H3a1 1 0 01-1-1V5z" clip-rule="evenodd"/></svg>
-        Refresh
-      </button>
-    </div>
-    <div class="rounded-xl overflow-hidden border border-slate-700" style="background:#1e293b;">
-      <table id="sig-table">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Analyst</th>
-            <th>Symbol</th>
-            <th>Direction</th>
-            <th>Strike</th>
-            <th>Expiry</th>
-            <th>Confidence</th>
-            <th>Risk</th>
-            <th>Status</th>
-            <th>Rejection Reason</th>
-          </tr>
-        </thead>
-        <tbody id="sig-body">
-          <tr><td colspan="10" class="text-center text-slate-500 py-8">Loading...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-</main>
-
-<!-- Toast container -->
-<div id="toast"></div>
-
-<!-- Kill Switch Modal -->
-<div id="ks-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-  <div class="rounded-xl border border-slate-600 p-6 w-full max-w-md" style="background:#1e293b;">
-    <h3 class="text-lg font-bold text-white mb-4">Halt Trading — Confirm</h3>
-    <label class="block text-sm text-slate-400 mb-2">Reason (required)</label>
-    <input id="ks-reason" type="text" placeholder="e.g. Abnormal market volatility"
-      class="w-full rounded-lg px-3 py-2 text-sm border border-slate-600 mb-4"
-      style="background:#0f172a; color:#e2e8f0;"
-      onkeydown="if(event.key==='Enter') confirmKillSwitch()" />
-    <div class="flex gap-3 justify-end">
-      <button class="btn btn-gray" onclick="closeModal()" style="background:#334155;color:#e2e8f0;">Cancel</button>
-      <button class="btn btn-red" onclick="confirmKillSwitch()">Activate Kill Switch</button>
+<!-- ═══════════════════════════ STATS ROW ═══════════════════════════ -->
+<div class="grid grid-cols-4 gap-4 mt-4 px-6">
+  <!-- Open Positions -->
+  <div class="card p-4 rounded-xl">
+    <div class="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Open Positions</div>
+    <div class="text-3xl font-bold text-indigo-400" x-text="state.open_positions_count"></div>
+  </div>
+  <!-- Daily P&L -->
+  <div class="card p-4 rounded-xl">
+    <div class="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Daily P&L</div>
+    <div class="text-3xl font-bold" :class="pnlClass(state.total_pnl / 10000)" x-text="formatUsd(state.total_pnl)"></div>
+  </div>
+  <!-- Approved Today -->
+  <div class="card p-4 rounded-xl">
+    <div class="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Approved Today</div>
+    <div class="text-3xl font-bold text-blue-400" x-text="state.approved_today"></div>
+  </div>
+  <!-- Active Analysts -->
+  <div class="card p-4 rounded-xl">
+    <div class="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Active Analysts</div>
+    <div class="text-3xl font-bold text-emerald-400">
+      <span x-text="state.active_analysts"></span><span class="text-slate-500 text-lg font-normal"> / 12</span>
     </div>
   </div>
 </div>
 
+<!-- ═══════════════════════════ TAB CONTENT ═══════════════════════════ -->
+<div class="px-6 mt-6 pb-20">
+
+  <!-- ── POSITIONS TAB ── -->
+  <div x-show="activeTab === 'positions'">
+    <div class="card rounded-xl overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
+        <span class="text-sm font-semibold text-white">Open Positions</span>
+        <span class="text-xs text-slate-400" x-text="state.positions.length + ' positions'"></span>
+      </div>
+      <div class="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Analyst</th>
+              <th>Account</th>
+              <th>Symbol</th>
+              <th>Strike / Expiry</th>
+              <th>Entry</th>
+              <th>Current</th>
+              <th>P&L</th>
+              <th>Delta</th>
+              <th>Theta</th>
+              <th>DTE</th>
+              <th>Spread</th>
+              <th>Strategy</th>
+              <th>Alert</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-if="state.positions.length === 0">
+              <tr>
+                <td colspan="14" class="text-center text-slate-500 py-12">
+                  <div class="text-2xl mb-2">📭</div>
+                  <div>No open positions</div>
+                </td>
+              </tr>
+            </template>
+            <template x-for="pos in state.positions" :key="pos.position_id">
+              <tr>
+                <!-- Analyst -->
+                <td>
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full flex-shrink-0" :style="'background:' + analystColor(pos.analyst_id)"></span>
+                    <span class="text-slate-300 font-medium text-xs" x-text="pos.analyst_id"></span>
+                  </div>
+                </td>
+                <!-- Account -->
+                <td>
+                  <span class="badge" :class="pos.account_type === 'live' ? 'badge-rejected' : 'badge-idle'"
+                    x-text="pos.account_id || pos.account_type || '—'"></span>
+                </td>
+                <!-- Symbol + Direction -->
+                <td>
+                  <span class="font-bold text-white" x-text="pos.symbol"></span>
+                  <span class="badge ml-1" :class="pos.direction === 'CALL' ? 'badge-call' : 'badge-put'" x-text="pos.direction"></span>
+                </td>
+                <!-- Strike / Expiry -->
+                <td>
+                  <span class="text-slate-200" x-text="pos.strike"></span>
+                  <span class="text-slate-400 text-xs ml-1" x-text="'/ ' + (pos.expiry || '—')"></span>
+                </td>
+                <!-- Entry -->
+                <td class="text-slate-300" x-text="pos.avg_cost_per_share != null ? '$' + Number(pos.avg_cost_per_share).toFixed(2) : '—'"></td>
+                <!-- Current -->
+                <td class="text-slate-300" x-text="pos.greeks && pos.greeks.current_price != null ? '$' + Number(pos.greeks.current_price).toFixed(2) : '—'"></td>
+                <!-- P&L with bar -->
+                <td>
+                  <template x-if="pos.greeks && pos.greeks.pnl_pct != null">
+                    <div class="flex items-center gap-2">
+                      <span :class="pnlClass(pos.greeks.pnl_pct)" x-text="formatPct(pos.greeks.pnl_pct)"></span>
+                      <div class="pnl-bar-container">
+                        <div class="pnl-bar-fill" :style="pnlBarStyle(pos.greeks.pnl_pct)"></div>
+                      </div>
+                    </div>
+                  </template>
+                  <template x-if="!pos.greeks || pos.greeks.pnl_pct == null">
+                    <span class="text-slate-500">—</span>
+                  </template>
+                </td>
+                <!-- Delta -->
+                <td :class="pos.greeks && pos.greeks.delta != null ? 'text-slate-300' : 'text-slate-500'"
+                    x-text="pos.greeks && pos.greeks.delta != null ? Number(pos.greeks.delta).toFixed(2) : '—'"></td>
+                <!-- Theta -->
+                <td :class="pos.greeks && pos.greeks.theta != null ? 'text-red-400' : 'text-slate-500'"
+                    x-text="pos.greeks && pos.greeks.theta != null ? Number(pos.greeks.theta).toFixed(2) : '—'"></td>
+                <!-- DTE -->
+                <td :class="dteClass(pos.dte)" x-text="pos.dte != null ? formatDte(pos.dte) : '—'"></td>
+                <!-- Spread -->
+                <td :class="pos.spread_pct > 0.10 ? 'text-amber-400' : 'text-slate-400'"
+                    x-text="pos.spread_pct != null ? (pos.spread_pct * 100).toFixed(1) + '%' : '—'"></td>
+                <!-- Strategy -->
+                <td>
+                  <template x-if="pos.exit_rules && pos.exit_rules.strategy">
+                    <span class="badge badge-paused" x-text="pos.exit_rules.strategy"></span>
+                  </template>
+                  <template x-if="!pos.exit_rules || !pos.exit_rules.strategy">
+                    <span class="text-slate-500">—</span>
+                  </template>
+                </td>
+                <!-- Alert -->
+                <td>
+                  <template x-if="pos.alert">
+                    <span class="alert-warning text-xs font-medium" x-text="alertIcon(pos.alert) + ' ' + pos.alert.replace(/_/g,' ')"></span>
+                  </template>
+                  <template x-if="!pos.alert">
+                    <span class="text-slate-600">—</span>
+                  </template>
+                </td>
+                <!-- Action -->
+                <td>
+                  <button @click="closePosition(pos.position_id, pos.symbol)"
+                    class="px-3 py-1 rounded-lg text-xs font-semibold bg-red-900 text-red-300 border border-red-700 hover:bg-red-800 transition-colors">
+                    Close
+                  </button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ANALYSTS TAB ── -->
+  <div x-show="activeTab === 'analysts'">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <template x-for="a in state.analyst_cards" :key="a.analyst_id">
+        <div class="card analyst-card p-4 rounded-xl relative overflow-hidden"
+             :class="a.status === 'PAUSED' ? 'opacity-60' : ''">
+          <!-- Colored left border accent -->
+          <div class="analyst-left-bar" :style="'background:' + analystColor(a.analyst_id)"></div>
+          <div class="pl-2">
+            <!-- Name + status -->
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-semibold text-white text-sm" x-text="a.display_name"></span>
+              <span :class="statusBadgeClass(a.status)" x-text="a.status"></span>
+            </div>
+            <!-- Stats -->
+            <div class="text-xs text-slate-400 mb-1">
+              Approved: <span class="text-emerald-400 font-semibold" x-text="a.approved_today"></span>
+              &nbsp;|&nbsp;
+              Rejected: <span class="text-red-400 font-semibold" x-text="a.rejected_today"></span>
+            </div>
+            <div class="text-xs text-slate-500 mb-3">
+              Last: <span x-text="timeAgo(a.last_signal)"></span>
+            </div>
+            <!-- Pause/Resume button -->
+            <template x-if="a.status === 'PAUSED'">
+              <button @click="toggleAnalyst(a.analyst_id, a.status)"
+                class="w-full py-1.5 rounded-lg text-xs font-semibold bg-emerald-900 text-emerald-300 border border-emerald-700 hover:bg-emerald-800 transition-colors">
+                ▶ Resume
+              </button>
+            </template>
+            <template x-if="a.status !== 'PAUSED'">
+              <button @click="toggleAnalyst(a.analyst_id, a.status)"
+                class="w-full py-1.5 rounded-lg text-xs font-semibold bg-amber-900 text-amber-300 border border-amber-700 hover:bg-amber-800 transition-colors">
+                ⏸ Pause
+              </button>
+            </template>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- ── SIGNALS TAB ── -->
+  <div x-show="activeTab === 'signals'">
+    <div class="card rounded-xl overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
+        <span class="text-sm font-semibold text-white">Recent Signal Feed</span>
+        <span class="text-xs text-slate-400">Last 20 signals, newest first</span>
+      </div>
+      <div class="overflow-y-auto" style="max-height:600px;">
+        <template x-if="state.signals.length === 0">
+          <div class="text-center text-slate-500 py-12">
+            <div class="text-2xl mb-2">📡</div>
+            <div>No signals yet today</div>
+          </div>
+        </template>
+        <table x-show="state.signals.length > 0">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Analyst</th>
+              <th>Symbol</th>
+              <th>Direction</th>
+              <th>Status</th>
+              <th>Confidence</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="sig in state.signals" :key="(sig.ts || sig.timestamp || '') + (sig.symbol || '') + Math.random()">
+              <tr>
+                <td class="text-slate-400 text-xs whitespace-nowrap" x-text="sig.ts ? new Date(sig.ts).toLocaleTimeString() : (sig.timestamp ? new Date(sig.timestamp).toLocaleTimeString() : '—')"></td>
+                <td>
+                  <div class="flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full" :style="'background:' + analystColor(sig.analyst_id || sig.source || '')"></span>
+                    <span class="text-slate-300 text-xs" x-text="sig.analyst_id || sig.source || '—'"></span>
+                  </div>
+                </td>
+                <td class="font-bold text-white" x-text="sig.symbol || '—'"></td>
+                <td>
+                  <template x-if="sig.direction">
+                    <span class="badge" :class="sig.direction === 'CALL' ? 'badge-call' : 'badge-put'" x-text="sig.direction"></span>
+                  </template>
+                  <template x-if="!sig.direction"><span class="text-slate-500">—</span></template>
+                </td>
+                <td>
+                  <span class="badge"
+                    :class="sig.event_type === 'SIGNAL_APPROVED' ? 'badge-approved' : sig.event_type === 'SIGNAL_REJECTED' ? 'badge-rejected' : 'badge-dup'"
+                    x-text="sig.event_type === 'SIGNAL_APPROVED' ? 'APPROVED' : sig.event_type === 'SIGNAL_REJECTED' ? 'REJECTED' : 'DUPLICATE'">
+                  </span>
+                </td>
+                <td class="text-slate-300 text-xs"
+                    x-text="sig.confidence != null ? Math.round(sig.confidence * 100) + '%' : '—'"></td>
+                <td class="text-slate-400 text-xs max-w-xs truncate"
+                    x-text="sig.reason || sig.rejection_reason || ''"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ACCOUNTS TAB ── -->
+  <div x-show="activeTab === 'accounts'">
+    <div class="card rounded-xl overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-700">
+        <span class="text-sm font-semibold text-white">Trading Accounts</span>
+      </div>
+      <template x-if="state.accounts.length === 0">
+        <div class="text-center text-slate-500 py-12">
+          <div class="text-2xl mb-2">🏦</div>
+          <div>No accounts configured</div>
+        </div>
+      </template>
+      <div class="overflow-x-auto" x-show="state.accounts.length > 0">
+        <table>
+          <thead>
+            <tr>
+              <th>Account ID</th>
+              <th>Display Name</th>
+              <th>Mode</th>
+              <th>Enabled</th>
+              <th>Max Position Size</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="acc in state.accounts" :key="acc.account_id || acc.id || Math.random()">
+              <tr :class="acc.account_type === 'live' ? 'bg-red-950/10' : ''">
+                <td class="font-mono text-slate-300 text-xs" x-text="acc.account_id || acc.id || '—'"></td>
+                <td class="font-medium text-white" x-text="acc.display_name || acc.name || '—'"></td>
+                <td>
+                  <span class="badge" :class="acc.account_type === 'live' ? 'badge-rejected' : 'badge-idle'"
+                    x-text="(acc.account_type || 'paper').toUpperCase()"></span>
+                </td>
+                <td>
+                  <span class="badge" :class="acc.enabled !== false ? 'badge-active' : 'badge-paused'"
+                    x-text="acc.enabled !== false ? 'Enabled' : 'Disabled'"></span>
+                </td>
+                <td class="text-slate-300" x-text="acc.max_position_size_usd != null ? '$' + acc.max_position_size_usd.toLocaleString() : '—'"></td>
+                <td>
+                  <span class="badge badge-active" x-show="acc.enabled !== false">OK</span>
+                  <span class="badge badge-paused" x-show="acc.enabled === false">Inactive</span>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tab content -->
+
+<!-- ═══════════════════════════ KILL SWITCH ACTIVATE MODAL ═══════════════════════════ -->
+<div class="modal-overlay" x-show="showKillModal" x-transition:enter="transition ease-out duration-150"
+     x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+     @click.self="showKillModal=false" style="display:none;">
+  <div class="card p-6 w-full max-w-md mx-4" style="border-color:#7F1D1D;">
+    <h3 class="text-lg font-bold text-red-400 mb-2">⛔ Activate Kill Switch</h3>
+    <p class="text-sm text-slate-400 mb-4">This will halt <strong class="text-white">ALL trading immediately</strong>. Analysts will be suspended until you reactivate.</p>
+    <label class="block text-xs text-slate-400 uppercase tracking-wider mb-1">Reason (optional)</label>
+    <input type="text" x-model="killReason" placeholder="e.g. Abnormal market volatility"
+      class="w-full rounded-lg px-3 py-2 text-sm border border-slate-600 mb-5 focus:outline-none focus:border-red-500"
+      style="background:#0F172A; color:#E2E8F0;"
+      @keydown.enter="activateKillSwitch()" />
+    <div class="flex gap-3 justify-end">
+      <button @click="showKillModal=false"
+        class="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">
+        Cancel
+      </button>
+      <button @click="activateKillSwitch()"
+        class="px-4 py-2 rounded-lg text-sm font-bold bg-red-700 text-white hover:bg-red-600 transition-colors">
+        ⛔ Activate Kill Switch
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ KILL SWITCH DEACTIVATE MODAL ═══════════════════════════ -->
+<div class="modal-overlay" x-show="showDeactivateModal" x-transition:enter="transition ease-out duration-150"
+     x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+     @click.self="showDeactivateModal=false" style="display:none;">
+  <div class="card p-6 w-full max-w-md mx-4" style="border-color:#047857;">
+    <h3 class="text-lg font-bold text-emerald-400 mb-2">☑ Deactivate Kill Switch</h3>
+    <p class="text-sm text-slate-400 mb-4">Resume normal trading? All analysts will be re-enabled and signals will be processed again.</p>
+    <template x-if="state.kill_switch && state.kill_switch.reason">
+      <div class="mb-4 px-3 py-2 rounded-lg text-xs text-slate-400 border border-slate-700" style="background:#0F172A;">
+        Last reason: <span class="text-slate-200" x-text="state.kill_switch.reason"></span>
+      </div>
+    </template>
+    <div class="flex gap-3 justify-end">
+      <button @click="showDeactivateModal=false"
+        class="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">
+        Cancel
+      </button>
+      <button @click="deactivateKillSwitch()"
+        class="px-4 py-2 rounded-lg text-sm font-bold bg-emerald-700 text-white hover:bg-emerald-600 transition-colors">
+        ▶ Resume Trading
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ TOAST CONTAINER ═══════════════════════════ -->
+<div class="toast-container">
+  <template x-for="t in toasts" :key="t.id">
+    <div class="toast" :class="t.type === 'ok' ? 'toast-ok' : 'toast-err'" x-text="t.msg"></div>
+  </template>
+</div>
+
+<!-- ═══════════════════════════ FOOTER ═══════════════════════════ -->
+<footer class="fixed bottom-0 left-0 right-0 border-t border-slate-800 px-6 py-2 flex items-center justify-between text-xs text-slate-500" style="background:#0F172A;">
+  <span>AnalystTeam v2 &nbsp;|&nbsp; commit 98dadf9 &nbsp;|&nbsp; 499 tests passing</span>
+  <span :class="wsConnected ? 'text-emerald-500' : 'text-amber-500'"
+        x-text="wsConnected ? 'WS: Connected' : 'WS: Reconnecting…'"></span>
+</footer>
+
+<!-- ═══════════════════════════ ALPINE APP ═══════════════════════════ -->
 <script>
-// ──────────────────────────────────────────────
-// Utility
-// ──────────────────────────────────────────────
-function showToast(msg, ok=true) {
-  const t = document.getElementById('toast');
-  const d = document.createElement('div');
-  d.className = 'toast-msg ' + (ok ? 'toast-ok' : 'toast-err');
-  d.textContent = msg;
-  t.appendChild(d);
-  setTimeout(() => d.remove(), 4000);
-}
+function app() {
+  return {
+    state: {
+      positions: [], signals: [], analyst_cards: [], accounts: [],
+      kill_switch: { active: false, reason: "" },
+      paper_mode: true,
+      total_pnl: 0,
+      open_positions_count: 0,
+      approved_today: 0,
+      active_analysts: 0,
+      updated_at: ""
+    },
+    showKillModal: false,
+    showDeactivateModal: false,
+    killReason: "",
+    toasts: [],
+    ws: null,
+    wsConnected: false,
+    activeTab: "positions",
 
-function statusBadge(status) {
-  const map = {
-    APPROVED:  ['badge-green',  'APPROVED'],
-    EXECUTED:  ['badge-green',  'EXECUTED'],
-    CLOSED:    ['badge-gray',   'CLOSED'],
-    PENDING:   ['badge-yellow', 'PENDING'],
-    REJECTED:  ['badge-red',    'REJECTED'],
+    init() {
+      this.fetchState();
+      this.connectWS();
+    },
+
+    connectWS() {
+      const proto = location.protocol === "https:" ? "wss:" : "ws:";
+      try {
+        this.ws = new WebSocket(proto + "//" + location.host + "/ws");
+        this.ws.onopen = () => { this.wsConnected = true; };
+        this.ws.onmessage = (e) => {
+          try { this.state = JSON.parse(e.data); } catch (err) { console.error("WS parse error", err); }
+        };
+        this.ws.onclose = () => {
+          this.wsConnected = false;
+          setTimeout(() => this.connectWS(), 3000);
+        };
+        this.ws.onerror = () => { this.wsConnected = false; };
+      } catch (err) {
+        this.wsConnected = false;
+        setTimeout(() => this.connectWS(), 3000);
+      }
+    },
+
+    fetchState() {
+      fetch("/api/state")
+        .then(r => r.json())
+        .then(d => { this.state = d; })
+        .catch(() => {});
+    },
+
+    async post(url, body = {}) {
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || d.message || "Request failed");
+      return d;
+    },
+
+    async activateKillSwitch() {
+      try {
+        await this.post("/api/kill-switch/activate", { reason: this.killReason || "Manual activation via dashboard" });
+        this.showKillModal = false;
+        this.killReason = "";
+        this.toast("Kill switch ACTIVATED — trading halted", "err");
+        this.fetchState();
+      } catch (e) { this.toast("Failed: " + e.message, "err"); }
+    },
+
+    async deactivateKillSwitch() {
+      try {
+        await this.post("/api/kill-switch/deactivate");
+        this.showDeactivateModal = false;
+        this.toast("Kill switch cleared — trading resumed", "ok");
+        this.fetchState();
+      } catch (e) { this.toast("Failed: " + e.message, "err"); }
+    },
+
+    async closePosition(positionId, symbol) {
+      try {
+        await this.post("/api/positions/" + positionId + "/close");
+        this.toast("Close queued for " + (symbol || positionId), "ok");
+        this.fetchState();
+      } catch (e) { this.toast("Failed: " + e.message, "err"); }
+    },
+
+    async toggleAnalyst(analystId, currentStatus) {
+      try {
+        if (currentStatus === "PAUSED") {
+          await this.post("/api/analysts/" + analystId + "/resume");
+          this.toast(analystId + " resumed", "ok");
+        } else {
+          await this.post("/api/analysts/" + analystId + "/pause");
+          this.toast(analystId + " paused", "err");
+        }
+        this.fetchState();
+      } catch (e) { this.toast("Failed: " + e.message, "err"); }
+    },
+
+    toast(msg, type = "ok") {
+      const t = { id: Date.now() + Math.random(), msg, type };
+      this.toasts.push(t);
+      setTimeout(() => { this.toasts = this.toasts.filter(x => x.id !== t.id); }, 3000);
+    },
+
+    pnlClass(pct) {
+      if (pct == null) return "text-slate-400";
+      return pct >= 0.01 ? "pnl-positive" : pct <= -0.01 ? "pnl-negative" : "text-slate-400";
+    },
+
+    pnlBarStyle(pct) {
+      const p = pct || 0;
+      const clamped = Math.max(-0.5, Math.min(1.0, p));
+      const norm = (clamped + 0.5) / 1.5;
+      const width = Math.abs(norm - 0.333) * 150;
+      const color = p >= 0 ? "#10B981" : "#EF4444";
+      return "width:" + Math.min(100, Math.max(2, width)) + "%;background:" + color;
+    },
+
+    statusBadgeClass(status) {
+      if (status === "ACTIVE") return "badge badge-active";
+      if (status === "PAUSED") return "badge badge-paused";
+      return "badge badge-idle";
+    },
+
+    ksClass() {
+      return this.state.kill_switch && this.state.kill_switch.active ? "ks-active" : "ks-healthy";
+    },
+
+    formatPct(n) {
+      if (n == null) return "—";
+      return (n >= 0 ? "+" : "") + (n * 100).toFixed(1) + "%";
+    },
+
+    formatUsd(n) {
+      if (n == null) return "—";
+      const abs = Math.abs(n).toFixed(0);
+      return (n >= 0 ? "+$" : "-$") + Number(abs).toLocaleString();
+    },
+
+    timeAgo(ts) {
+      if (!ts) return "never";
+      try {
+        const diff = (Date.now() - new Date(ts).getTime()) / 1000;
+        if (diff < 60)    return "just now";
+        if (diff < 3600)  return Math.floor(diff / 60) + "m ago";
+        if (diff < 86400) return Math.floor(diff / 3600) + "h ago";
+        return Math.floor(diff / 86400) + "d ago";
+      } catch { return "—"; }
+    },
+
+    formatDte(dte) {
+      if (dte == null) return "—";
+      if (dte === 0) return "0DTE";
+      if (dte === 1) return "1 day";
+      return dte + " days";
+    },
+
+    dteClass(dte) {
+      if (dte == null) return "text-slate-500";
+      if (dte === 0)   return "text-red-400 font-bold";
+      if (dte <= 2)    return "text-amber-400";
+      return "text-slate-300";
+    },
+
+    alertIcon(alert) {
+      if (!alert) return "";
+      const icons = { NEAR_EXPIRY: "⏰", HIGH_THETA_DECAY: "🔥", WIDE_SPREAD: "⚠️", LOW_OI: "💧" };
+      return icons[alert] || "⚠️";
+    },
+
+    analystColor(analystId) {
+      const colors = {
+        vinod_spx: "#6366F1", vinod_other: "#8B5CF6", albert: "#EC4899",
+        zabes: "#F59E0B", adi: "#10B981", pilla_swings: "#06B6D4",
+        everest: "#3B82F6", mag7: "#F97316", spy_spx_uw: "#14B8A6",
+        screener: "#84CC16", social_trends: "#EF4444", technical_ta: "#A855F7"
+      };
+      return colors[analystId] || "#6366F1";
+    }
   };
-  const [cls, label] = map[status] || ['badge-gray', status || '—'];
-  return `<span class="${cls} px-2 py-0.5 rounded text-xs font-bold">${label}</span>`;
 }
-
-function dirBadge(dir) {
-  return dir === 'CALL'
-    ? '<span class="badge-green px-2 py-0.5 rounded text-xs font-bold">CALL</span>'
-    : '<span class="badge-red px-2 py-0.5 rounded text-xs font-bold">PUT</span>';
-}
-
-function fmtTime(ts) {
-  if (!ts) return '—';
-  try {
-    return new Date(ts).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-  } catch { return ts; }
-}
-
-function fmtDate(ts) {
-  if (!ts) return '—';
-  try {
-    return new Date(ts).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
-  } catch { return ts; }
-}
-
-// ──────────────────────────────────────────────
-// Positions
-// ──────────────────────────────────────────────
-async function loadPositions() {
-  const tbody = document.getElementById('pos-body');
-  try {
-    const res = await fetch('/api/positions');
-    const data = await res.json();
-    document.getElementById('pos-count').textContent = data.length;
-
-    if (!data.length) {
-      tbody.innerHTML = '<tr><td colspan="10" class="text-center text-slate-500 py-8">No open positions</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = data.map(p => {
-      const exitStrategy = p.exit_rules?.strategy || '—';
-      const cost = p.avg_cost_per_share != null ? `$${Number(p.avg_cost_per_share).toFixed(2)}` : '—';
-      return `<tr>
-        <td class="text-slate-300 font-medium">${p.analyst_id || '—'}</td>
-        <td class="text-white font-bold">${p.symbol || '—'}</td>
-        <td>${dirBadge(p.direction)}</td>
-        <td class="text-slate-200">$${p.strike || '—'}</td>
-        <td class="text-slate-400 text-sm">${p.expiry || '—'}</td>
-        <td class="text-slate-300">${p.qty || '—'}</td>
-        <td class="text-slate-300">${cost} <span class="text-slate-500 text-xs">/ share</span></td>
-        <td><span class="badge-gray px-2 py-0.5 rounded text-xs">${exitStrategy}</span></td>
-        <td class="text-slate-400 text-sm">${fmtTime(p.opened_at)}</td>
-        <td>
-          <button class="btn btn-orange text-xs" onclick="closePosition('${p.position_id}', this)">
-            Close
-          </button>
-        </td>
-      </tr>`;
-    }).join('');
-  } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="10" class="text-center text-red-400 py-8">Error loading positions: ${e.message}</td></tr>`;
-  }
-}
-
-async function closePosition(positionId, btn) {
-  if (!confirm('Manually close this position? This queues a close request for the monitor agent.')) return;
-  btn.disabled = true;
-  btn.textContent = 'Queuing…';
-  try {
-    const res = await fetch(`/api/positions/${positionId}/close`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({})});
-    const data = await res.json();
-    if (res.ok) {
-      showToast(`Close queued for ${positionId.slice(0,8)}…`);
-      setTimeout(loadPositions, 1000);
-    } else {
-      showToast(`Error: ${data.detail || 'unknown'}`, false);
-      btn.disabled = false;
-      btn.textContent = 'Close';
-    }
-  } catch(e) {
-    showToast(`Error: ${e.message}`, false);
-    btn.disabled = false;
-    btn.textContent = 'Close';
-  }
-}
-
-// ──────────────────────────────────────────────
-// Signals
-// ──────────────────────────────────────────────
-async function loadSignals() {
-  const tbody = document.getElementById('sig-body');
-  try {
-    const res = await fetch('/api/signals');
-    const data = await res.json();
-    document.getElementById('sig-count').textContent = data.length;
-
-    if (!data.length) {
-      tbody.innerHTML = '<tr><td colspan="10" class="text-center text-slate-500 py-8">No signals yet</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = data.map(s => {
-      const confidence = s.confidence != null ? `${Math.round(s.confidence * 100)}%` : '—';
-      const risk = s.risk_level || '—';
-      const riskCls = risk === 'HIGH' ? 'badge-red' : risk === 'MEDIUM' ? 'badge-yellow' : 'badge-green';
-      return `<tr>
-        <td class="text-slate-400 text-sm">${fmtTime(s.timestamp)}</td>
-        <td class="text-slate-300 font-medium">${s.analyst_id || '—'}</td>
-        <td class="text-white font-bold">${s.symbol || '—'}</td>
-        <td>${dirBadge(s.direction)}</td>
-        <td class="text-slate-200">$${s.strike || '—'}</td>
-        <td class="text-slate-400 text-sm">${s.expiry || '—'}</td>
-        <td class="text-slate-300">${confidence}</td>
-        <td><span class="${riskCls} px-2 py-0.5 rounded text-xs font-bold">${risk}</span></td>
-        <td>${statusBadge(s.status)}</td>
-        <td class="text-slate-400 text-sm max-w-xs truncate">${s.rejection_reason || ''}</td>
-      </tr>`;
-    }).join('');
-  } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="10" class="text-center text-red-400 py-8">Error loading signals: ${e.message}</td></tr>`;
-  }
-}
-
-// ──────────────────────────────────────────────
-// Kill Switch
-// ──────────────────────────────────────────────
-function activateKillSwitch() {
-  document.getElementById('ks-reason').value = '';
-  document.getElementById('ks-modal').classList.remove('hidden');
-  setTimeout(() => document.getElementById('ks-reason').focus(), 50);
-}
-
-function closeModal() {
-  document.getElementById('ks-modal').classList.add('hidden');
-}
-
-async function confirmKillSwitch() {
-  const reason = document.getElementById('ks-reason').value.trim();
-  if (!reason) { showToast('Please enter a reason', false); return; }
-  closeModal();
-  try {
-    const res = await fetch('/api/kill-switch/activate', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({reason})
-    });
-    if (res.ok) {
-      showToast('Kill switch activated — trading halted');
-      setTimeout(() => location.reload(), 1200);
-    } else {
-      const d = await res.json();
-      showToast(`Error: ${d.detail}`, false);
-    }
-  } catch(e) {
-    showToast(`Error: ${e.message}`, false);
-  }
-}
-
-async function deactivateKillSwitch() {
-  if (!confirm('Resume trading? This will deactivate the kill switch.')) return;
-  try {
-    const res = await fetch('/api/kill-switch/deactivate', {method:'POST'});
-    if (res.ok) {
-      showToast('Kill switch cleared — trading resumed');
-      setTimeout(() => location.reload(), 1200);
-    } else {
-      const d = await res.json();
-      showToast(`Error: ${d.detail}`, false);
-    }
-  } catch(e) {
-    showToast(`Error: ${e.message}`, false);
-  }
-}
-
-// Close modal on backdrop click
-document.getElementById('ks-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
-
-// ──────────────────────────────────────────────
-// Auto-refresh (30s)
-// ──────────────────────────────────────────────
-let countdown = 30;
-function tick() {
-  countdown--;
-  document.getElementById('refresh-countdown').textContent = countdown + 's';
-  if (countdown <= 0) {
-    countdown = 30;
-    loadPositions();
-    loadSignals();
-  }
-}
-setInterval(tick, 1000);
-
-// Initial load
-loadPositions();
-loadSignals();
 </script>
+
 </body>
 </html>

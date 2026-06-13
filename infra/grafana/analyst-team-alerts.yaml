@@ -1,0 +1,11 @@
+groups:
+  - name: analyst_team
+    rules:
+      - alert: KillSwitchActive
+        expr: 1  # placeholder, real PromQL when Prometheus scrapes dashboard /api/health
+        annotations:
+          summary: "AnalystTeam kill switch is active"
+      - alert: NoSignalsFor2Hours
+        expr: 1  # placeholder
+        annotations:
+          summary: "No trading signals for 2+ hours during RTH"

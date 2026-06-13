@@ -1,0 +1,28 @@
+{
+  "accounts": [
+    {
+      "account_id": "primary",
+      "display_name": "Primary Account",
+      "username_secret": "ROBINHOOD_USERNAME",
+      "password_secret": "ROBINHOOD_PASSWORD",
+      "totp_secret": "ROBINHOOD_TOTP",
+      "paper_mode": true,
+      "enabled": true,
+      "max_position_size_usd": 200,
+      "notes": "Main trading account"
+    },
+    {
+      "account_id": "secondary",
+      "display_name": "Secondary Account",
+      "username_secret": "ROBINHOOD_USERNAME_2",
+      "password_secret": "ROBINHOOD_PASSWORD_2",
+      "totp_secret": "ROBINHOOD_TOTP_2",
+      "paper_mode": true,
+      "enabled": false,
+      "max_position_size_usd": 100,
+      "notes": "Secondary account (disabled by default)"
+    }
+  ],
+  "global_paper_mode_override": true,
+  "execute_in_all_accounts": true
+}

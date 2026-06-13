@@ -59,6 +59,10 @@ class RHGateway(Protocol):
         """Submit a closing order. Returns True on success."""
         ...
 
+    async def get_positions(self) -> list[PositionRecord]:
+        """Return all currently open positions."""
+        ...
+
     @property
     def paper_mode(self) -> bool:
         """True if running in paper trading mode."""
@@ -163,6 +167,8 @@ class MonitorAgent:
 
     async def _poll_positions(self) -> None:
         """Check all open positions and apply exit logic."""
+        await self._process_manual_close_queue()
+
         if not self._positions:
             return
 
@@ -181,6 +187,10 @@ class MonitorAgent:
 
     async def _check_position(self, pos: PositionRecord) -> None:
         """Apply exit strategy for one position."""
+        from gateway.telegram_handler import _load_paused_analysts
+        if pos.analyst_id in _load_paused_analysts():
+            return  # Analyst paused, skip this position entirely
+
         current_price = await self._get_price(pos)
         if current_price is None:
             logger.warning("No quote for %s — skipping", pos.position_id)
@@ -467,6 +477,39 @@ class MonitorAgent:
         return False
 
     # ─── Core operations ────────────────────────────────────────────────────
+
+    async def _process_manual_close_queue(self) -> None:
+        """Process manual close requests from shared/state/manual_close_queue.jsonl."""
+        path = Path("shared/state/manual_close_queue.jsonl")
+        if not path.exists():
+            return
+        try:
+            lines = path.read_text().splitlines()
+            if not lines:
+                return
+            path.write_text("")  # clear the queue
+        except Exception:
+            return
+        positions = await self._gateway.get_positions()
+        for line in lines:
+            try:
+                entry = json.loads(line)
+                action = entry.get("action", "")
+                if action == "close_all":
+                    for pos in positions:
+                        await self._close_position(pos, pos.qty, "MANUAL_CLOSE_ALL")
+                elif action == "close_by_symbol":
+                    symbol = entry.get("symbol", "")
+                    matching = [p for p in positions if p.symbol == symbol.upper()]
+                    for pos in matching:
+                        await self._close_position(pos, pos.qty, f"MANUAL_CLOSE_{symbol}")
+                elif action == "close_position":
+                    pid = entry.get("position_id", "")
+                    matching = [p for p in positions if p.position_id == pid]
+                    for pos in matching:
+                        await self._close_position(pos, pos.qty, "MANUAL_CLOSE_DASHBOARD")
+            except Exception as exc:
+                logger.error("Manual close queue error: %s", exc)
 
     async def _drain_sell_queue(self, channel_id: str) -> list[dict]:
         """Non-blocking drain of all pending messages from a sell queue."""

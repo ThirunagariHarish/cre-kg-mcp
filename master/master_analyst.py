@@ -83,6 +83,20 @@ class MasterAnalyst:
         self._rejected_count = 0
         self._duplicate_count = 0
 
+        # Consensus gate
+        self._consensus_threshold = 1  # default: no consensus required
+        self._pending_consensus: dict[str, list[TradeSignal]] = {}
+        try:
+            import json as _json
+            _cfg_path = os.path.join(os.path.dirname(__file__), "..", "configs", "global.json")
+            with open(_cfg_path) as _f:
+                _gcfg = _json.load(_f)
+            _ct = _gcfg.get("master_analyst", {}).get("consensus_threshold")
+            if _ct is not None:
+                self._consensus_threshold = int(_ct)
+        except Exception:
+            pass  # use default of 1
+
         self._log = logging.getLogger("master_analyst")
 
     # ─── Public API ──────────────────────────────────────────────────────────
@@ -131,6 +145,12 @@ class MasterAnalyst:
     async def _process(self, signal: TradeSignal) -> None:
         """Full processing pipeline for one signal."""
 
+        # 0. Paused analyst check (before dedup — paused analysts are always dropped first)
+        from gateway.telegram_handler import _load_paused_analysts
+        if signal.analyst_id in _load_paused_analysts():
+            await self._reject(signal, f"Analyst {signal.analyst_id} is paused")
+            return
+
         # 1. Dedup check
         if self._is_duplicate(signal):
             self._duplicate_count += 1
@@ -170,6 +190,20 @@ class MasterAnalyst:
             )
             return
 
+        # 3b. VIX regime filter
+        from core.vix_regime import adjust_confidence_threshold, get_regime_label, should_pause_high_risk_analysts
+        vix_label = get_regime_label()
+        adjusted_threshold = adjust_confidence_threshold(signal.confidence)
+        if signal.confidence < adjusted_threshold:
+            await self._reject(
+                signal,
+                f"VIX regime filter ({vix_label}): confidence {signal.confidence:.0%} < adjusted threshold {adjusted_threshold:.0%}",
+            )
+            return
+        if signal.risk_level == "HIGH" and should_pause_high_risk_analysts():
+            await self._reject(signal, "VIX CRISIS regime: HIGH risk signals paused")
+            return
+
         # 3. RL gate: auto-reject patterns with win_rate < 40% (>= 10 trades)
         await self._ensure_journal_initialized()
         pattern_type = _compute_pattern_type(signal)
@@ -184,7 +218,37 @@ class MasterAnalyst:
             await self._reject(signal, conflict_reason)
             return
 
-        # 5. Ask Claude (with win-rate hint)
+        # 5. Consensus gate (only active if threshold > 1)
+        if self._consensus_threshold > 1:
+            key = f"{signal.symbol}|{signal.direction}"
+            now = datetime.now(tz=timezone.utc)
+            # Clean stale entries (older than 15 min)
+            if key in self._pending_consensus:
+                self._pending_consensus[key] = [
+                    s for s in self._pending_consensus[key]
+                    if (now - s.timestamp).total_seconds() < 900
+                ]
+            else:
+                self._pending_consensus[key] = []
+            # Avoid adding duplicates from the same analyst
+            existing_analysts = {s.analyst_id for s in self._pending_consensus[key]}
+            if signal.analyst_id not in existing_analysts:
+                self._pending_consensus[key].append(signal)
+            count = len(self._pending_consensus[key])
+            if count < self._consensus_threshold:
+                self._log.info(
+                    "Consensus gate: %d/%d analysts agree on %s %s — waiting",
+                    count, self._consensus_threshold, signal.symbol, signal.direction,
+                )
+                return  # Hold signal; don't reject, don't approve yet
+            else:
+                self._log.info(
+                    "Consensus reached: %d analysts agree on %s %s — proceeding",
+                    count, signal.symbol, signal.direction,
+                )
+                self._pending_consensus.pop(key, None)  # Clear after consensus reached
+
+        # Ask Claude (with win-rate hint)
         approved, reason = await self._ask_claude(signal)
 
         if approved:

@@ -117,6 +117,20 @@ class RHGateway:
             )
             return None
 
+        # Step 1b: bid-ask spread check
+        skip_spread_check = os.getenv("SKIP_SPREAD_CHECK", "false").lower() == "true"
+        _bid = getattr(contract, "bid_per_share", 0)
+        _ask = getattr(contract, "ask_per_share", 0)
+        if not skip_spread_check and _bid > 0 and _ask > 0:
+            mid = (_bid + _ask) / 2
+            spread_pct = (_ask - _bid) / mid
+            if spread_pct > 0.15:
+                logger.warning(
+                    "Bid-ask spread too wide for %s: %.0f%% (bid=%.2f ask=%.2f) — skipping",
+                    signal.symbol, spread_pct * 100, _bid, _ask,
+                )
+                return None
+
         # Step 2: min ask guard
         if not contract.is_tradable:
             logger.warning(
@@ -137,7 +151,13 @@ class RHGateway:
 
         # Step 4: compute qty
         ask_per_contract = contract.ask_per_share * 100
-        qty = max(1, int(self._max_position_usd / ask_per_contract))
+        enable_kelly = os.getenv("ENABLE_KELLY_SIZING", "false").lower() == "true"
+        if enable_kelly:
+            kelly_size = await self._get_kelly_size(signal)
+            effective_max = kelly_size
+        else:
+            effective_max = self._max_position_usd
+        qty = max(1, int(effective_max / ask_per_contract))
 
         # Step 5: limit price = signal_price * (1 + buffer)
         # Use signal_price rather than live ask so the analyst's intent is preserved.
@@ -392,6 +412,39 @@ class RHGateway:
                 await self._redis.setex(key, _IDEMPOTENCY_TTL, payload)
             except Exception as exc:
                 logger.warning("Redis idempotency set failed: %s — local cache only", exc)
+
+    # ─────────────────────────────────────────────
+    # Kelly sizing helper
+    # ─────────────────────────────────────────────
+
+    async def _get_kelly_size(self, signal: TradeSignal) -> float:
+        """Compute Kelly-optimal position size. Falls back to max_position_usd on any error."""
+        try:
+            from core.kelly_sizer import compute_kelly_size
+            from master.memory_journal import MemoryJournal
+            journal = MemoryJournal()
+            await journal.initialize()
+            win_rate = await journal.get_analyst_win_rate(signal.analyst_id, min_trades=20)
+            if win_rate is None:
+                return self._max_position_usd
+            recent = await journal.get_recent_trades(signal.analyst_id, days=30)
+            wins = [t for t in recent if t.get("outcome") == "WIN"]
+            losses = [t for t in recent if t.get("outcome") == "LOSS"]
+            avg_win = sum(abs(t.get("pnl_pct", 0)) for t in wins) / len(wins) if wins else 0.5
+            avg_loss = sum(abs(t.get("pnl_pct", 0)) for t in losses) / len(losses) if losses else 0.3
+            result = compute_kelly_size(
+                bankroll_usd=10000,
+                win_rate=win_rate,
+                avg_win_pct=avg_win,
+                avg_loss_pct=avg_loss,
+                trades_count=len(recent),
+                max_position_usd=self._max_position_usd,
+            )
+            logger.info("Kelly sizing for %s: %s", signal.analyst_id, result.reason)
+            return result.position_size_usd
+        except Exception as exc:
+            logger.warning("Kelly sizing failed (%s), using default", exc)
+            return self._max_position_usd
 
     # ─────────────────────────────────────────────
     # Paper mode helpers

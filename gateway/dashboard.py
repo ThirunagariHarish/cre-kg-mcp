@@ -1,113 +1,86 @@
 """
-gateway/dashboard.py — FastAPI dashboard for AnalystTeam system state.
+gateway/dashboard.py — AnalystTeam Dashboard v2.
 
-Shows open positions, recent signals, kill-switch status, paper mode indicator.
-Plain HTML + Tailwind CDN — no React, no build step required.
+FastAPI app with:
+  - GET /              → full HTML dashboard (server-side render of initial state)
+  - GET /api/state     → JSON snapshot
+  - WS  /ws            → real-time push every 5 seconds
+  - POST /api/kill-switch/activate|deactivate
+  - POST /api/positions/{id}/close
+  - POST /api/analysts/{id}/pause|resume
+  - GET /api/health
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
 
-# ---------------------------------------------------------------------------
-# Path resolution — works whether run from repo root or scripts/ dir
-# ---------------------------------------------------------------------------
+from gateway.dashboard_state import get_all_state
+from core.kill_switch import set_blocked, set_healthy
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-_STATE_DIR = _REPO_ROOT / "shared" / "state"
+logger = logging.getLogger(__name__)
 
-KILL_SWITCH_PATH = _STATE_DIR / "kill_switch.json"
-OPEN_POSITIONS_PATH = _STATE_DIR / "open_positions.json"
-TRADE_JOURNAL_PATH = _STATE_DIR / "trade_journal.jsonl"
-MANUAL_CLOSE_QUEUE_PATH = _STATE_DIR / "manual_close_queue.jsonl"
-
-PAPER_MODE: bool = os.getenv("PAPER_TRADING_MODE", "true").lower() == "true"
-
-# ---------------------------------------------------------------------------
-# Kill-switch helpers (thin wrappers so we can override path)
-# ---------------------------------------------------------------------------
-
-def _ks_is_blocked() -> bool:
-    from core.kill_switch import is_blocked
-    return is_blocked(KILL_SWITCH_PATH)
-
-
-def _ks_set_blocked(reason: str) -> None:
-    from core.kill_switch import set_blocked
-    set_blocked(reason, KILL_SWITCH_PATH)
-
-
-def _ks_set_healthy() -> None:
-    from core.kill_switch import set_healthy
-    set_healthy(KILL_SWITCH_PATH)
+app = FastAPI(title="AnalystTeam Dashboard v2", version="2.0.0")
+templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 
 # ---------------------------------------------------------------------------
-# App setup
+# WebSocket connection manager
 # ---------------------------------------------------------------------------
 
-app = FastAPI(title="AnalystTeam Dashboard", version="1.0.0")
+class ConnectionManager:
+    def __init__(self) -> None:
+        self.active: list[WebSocket] = []
 
-_TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
-templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
+    async def connect(self, ws: WebSocket) -> None:
+        await ws.accept()
+        self.active.append(ws)
+        logger.info("WS client connected — %d active", len(self.active))
 
+    def disconnect(self, ws: WebSocket) -> None:
+        if ws in self.active:
+            self.active.remove(ws)
+        logger.info("WS client disconnected — %d active", len(self.active))
 
-# ---------------------------------------------------------------------------
-# State-reading helpers
-# ---------------------------------------------------------------------------
-
-def _read_json_list(path: Path) -> list[Any]:
-    """Read a JSON file that contains a list. Returns [] on any error."""
-    try:
-        text = path.read_text(encoding="utf-8")
-        data = json.loads(text)
-        return data if isinstance(data, list) else []
-    except Exception:
-        return []
-
-
-def _read_jsonl_last_n(path: Path, n: int = 50) -> list[dict]:
-    """Read last N lines from a .jsonl file. Returns [] on any error."""
-    try:
-        lines = path.read_text(encoding="utf-8").strip().splitlines()
-        recent = lines[-n:] if len(lines) > n else lines
-        result = []
-        for line in recent:
+    async def broadcast(self, data: dict) -> None:
+        dead: list[WebSocket] = []
+        for ws in self.active[:]:
             try:
-                result.append(json.loads(line))
-            except json.JSONDecodeError:
-                pass
-        return list(reversed(result))  # newest first
-    except Exception:
-        return []
+                await ws.send_json(data)
+            except Exception:
+                dead.append(ws)
+        for ws in dead:
+            self.disconnect(ws)
 
 
-def _append_jsonl(path: Path, record: dict) -> None:
-    """Atomically append a JSON record to a .jsonl file."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(record) + "\n")
+manager = ConnectionManager()
 
 
 # ---------------------------------------------------------------------------
-# Request/response models
+# Background push loop
 # ---------------------------------------------------------------------------
 
-class KillSwitchRequest(BaseModel):
-    reason: str = "Manually activated via dashboard"
+@app.on_event("startup")
+async def startup() -> None:
+    async def push_loop() -> None:
+        while True:
+            await asyncio.sleep(5)
+            if manager.active:
+                try:
+                    await manager.broadcast(get_all_state())
+                except Exception as exc:
+                    logger.error("push_loop error: %s", exc)
 
-
-class ManualCloseRequest(BaseModel):
-    note: str = ""
+    asyncio.create_task(push_loop())
 
 
 # ---------------------------------------------------------------------------
@@ -115,94 +88,88 @@ class ManualCloseRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 @app.get("/", response_class=HTMLResponse)
-async def dashboard(request: Request) -> HTMLResponse:
-    """Render the main dashboard HTML page."""
-    blocked = _ks_is_blocked()
-    return templates.TemplateResponse(
-        "dashboard.html",
+async def index(request: Request) -> HTMLResponse:
+    data = get_all_state()
+    return templates.TemplateResponse("dashboard.html", {"request": request, **data})
+
+
+@app.websocket("/ws")
+async def ws_endpoint(websocket: WebSocket) -> None:
+    await manager.connect(websocket)
+    try:
+        # Send initial state immediately on connect
+        await websocket.send_json(get_all_state())
+        while True:
+            # Keep-alive; actual updates come from push_loop
+            await asyncio.sleep(30)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception as exc:
+        logger.error("WS error: %s", exc)
+        manager.disconnect(websocket)
+
+
+@app.get("/api/state")
+async def api_state() -> JSONResponse:
+    return JSONResponse(get_all_state())
+
+
+@app.post("/api/kill-switch/activate")
+async def ks_activate(request: Request) -> JSONResponse:
+    body = await request.json()
+    reason = body.get("reason", "Activated via dashboard")
+    set_blocked(reason)
+    await manager.broadcast(get_all_state())
+    return JSONResponse({"status": "activated", "reason": reason})
+
+
+@app.post("/api/kill-switch/deactivate")
+async def ks_deactivate() -> JSONResponse:
+    set_healthy()
+    await manager.broadcast(get_all_state())
+    return JSONResponse({"status": "deactivated"})
+
+
+@app.post("/api/positions/{position_id}/close")
+async def close_position(position_id: str) -> JSONResponse:
+    from core.file_writer import append_jsonl
+    append_jsonl(
+        Path("shared/state/manual_close_queue.jsonl"),
         {
-            "request": request,
-            "kill_switch_active": blocked,
-            "paper_mode": PAPER_MODE,
+            "position_id":   position_id,
+            "action":        "close_position",
+            "requested_at":  datetime.now(timezone.utc).isoformat(),
         },
     )
+    await manager.broadcast(get_all_state())
+    return JSONResponse({"status": "queued", "position_id": position_id})
 
 
-@app.get("/api/positions")
-async def get_positions() -> JSONResponse:
-    """Return list of open positions."""
-    positions = _read_json_list(OPEN_POSITIONS_PATH)
-    return JSONResponse(content=positions)
+@app.post("/api/analysts/{analyst_id}/pause")
+async def pause_analyst(analyst_id: str) -> JSONResponse:
+    from gateway.telegram_handler import _load_paused_analysts, _save_paused_analysts
+    paused = _load_paused_analysts()
+    paused.add(analyst_id)
+    _save_paused_analysts(paused)
+    await manager.broadcast(get_all_state())
+    return JSONResponse({"status": "paused", "analyst_id": analyst_id})
 
 
-@app.get("/api/signals")
-async def get_signals() -> JSONResponse:
-    """Return last 50 signals from trade journal (newest first)."""
-    signals = _read_jsonl_last_n(TRADE_JOURNAL_PATH, n=50)
-    return JSONResponse(content=signals)
+@app.post("/api/analysts/{analyst_id}/resume")
+async def resume_analyst(analyst_id: str) -> JSONResponse:
+    from gateway.telegram_handler import _load_paused_analysts, _save_paused_analysts
+    paused = _load_paused_analysts()
+    paused.discard(analyst_id)
+    _save_paused_analysts(paused)
+    await manager.broadcast(get_all_state())
+    return JSONResponse({"status": "resumed", "analyst_id": analyst_id})
 
 
 @app.get("/api/health")
 async def health() -> JSONResponse:
-    """System health — kill-switch state and paper mode."""
-    blocked = _ks_is_blocked()
-    return JSONResponse(
-        content={
-            "status": "kill_switch_active" if blocked else "ok",
-            "paper_mode": PAPER_MODE,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-        }
-    )
-
-
-@app.post("/api/kill-switch/activate")
-async def activate_kill_switch(body: KillSwitchRequest) -> JSONResponse:
-    """Activate the kill switch with a given reason."""
-    try:
-        _ks_set_blocked(body.reason)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-    return JSONResponse(content={"status": "kill_switch_active", "reason": body.reason})
-
-
-@app.post("/api/kill-switch/deactivate")
-async def deactivate_kill_switch() -> JSONResponse:
-    """Deactivate the kill switch."""
-    try:
-        _ks_set_healthy()
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-    return JSONResponse(content={"status": "ok"})
-
-
-@app.post("/api/positions/{position_id}/close")
-async def manual_close_position(position_id: str, body: ManualCloseRequest = ManualCloseRequest()) -> JSONResponse:
-    """
-    Queue a manual close for a position.
-    Writes a record to manual_close_queue.jsonl for the monitor agent to pick up.
-    """
-    # Verify position exists
-    positions = _read_json_list(OPEN_POSITIONS_PATH)
-    position = next((p for p in positions if p.get("position_id") == position_id), None)
-    if position is None:
-        raise HTTPException(status_code=404, detail=f"Position {position_id} not found")
-
-    record = {
-        "position_id": position_id,
-        "requested_at": datetime.utcnow().isoformat() + "Z",
-        "reason": "manual_dashboard_close",
-        "note": body.note,
-        "position_snapshot": position,
-    }
-    try:
-        _append_jsonl(MANUAL_CLOSE_QUEUE_PATH, record)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to queue close: {exc}")
-
-    return JSONResponse(
-        content={
-            "status": "queued",
-            "position_id": position_id,
-            "message": "Manual close queued — monitor agent will process it",
-        }
-    )
+    return JSONResponse({
+        "status":     "ok",
+        "paper_mode": os.getenv("PAPER_TRADING_MODE", "true").lower() == "true",
+        "ws_clients": len(manager.active),
+        "timestamp":  datetime.now(timezone.utc).isoformat(),
+    })

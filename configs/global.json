@@ -15,5 +15,22 @@
     "hard_stop_loss_pct": -0.50,
     "hard_take_profit_pct": 1.00,
     "market_close_sweep_minutes": 5
+  },
+  "features": {
+    "enable_vix_regime_filter": true,
+    "enable_kelly_sizing": false,
+    "enable_consensus_gate": false,
+    "consensus_threshold": 1,
+    "spread_check_max_pct": 0.15,
+    "enable_polygon_quotes": false,
+    "enable_greeks_monitoring": true,
+    "greeks_refresh_interval_seconds": 300
+  },
+  "telegram": {
+    "enable_two_way": true
+  },
+  "dashboard": {
+    "port": 8765,
+    "ws_update_interval_seconds": 5
   }
 }
