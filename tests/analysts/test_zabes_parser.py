@@ -48,9 +48,9 @@ class TestParseExpiry:
         assert result == date(2026, 6, 15)
 
     def test_same_day(self) -> None:
-        result = _parse_expiry("06/13")
-        # Today is 2026-06-13 — should not roll to next year (not strictly before today)
-        assert result == date(2026, 6, 13)
+        result = _parse_expiry("06/14")
+        # Today is 2026-06-14 — should not roll to next year (not strictly before today)
+        assert result == date(2026, 6, 14)
 
     def test_past_date_rolls_to_next_year(self) -> None:
         # 01/10 has already passed in 2026 — should roll to 2027

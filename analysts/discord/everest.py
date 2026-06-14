@@ -1,18 +1,36 @@
 """
-analysts/discord/everest.py — Everest analyst: general trading alerts, MANUAL exit.
+analysts/discord/everest.py — Everest analyst: option BUY alerts from optionsbuftett.
 
-Everest posts general option buy alerts. User must manually close via dashboard.
-No auto-close is ever triggered — exit strategy is MANUAL.
+Monitors the Everest Discord channel where the trader `optionsbuftett` posts
+near-term option plays. Only BUY entries are parsed; exits, profit announcements,
+and promotional spam are silently dropped.
 
-BUY FORMAT (general):
-  "Buying {SYMBOL} {strike}{C/P} at {price}"
-  "Added {SYMBOL} {strike}{C/P} exp {date}"
-  "{SYMBOL} {strike}{C/P} at {price}" (with @here prefix)
-  "Bought {SYMBOL} {strike}{C/P} at {price}"
-  "Bougth {SYMBOL} {strike}{C/P} at {price}"  (common typo)
+BUY FORMAT (actual channel format, multi-line message):
+  HIGH CONFIDENCE 🎯
+  6/12 $MCD 290c @.19
+  1000  CONTRACTS
 
-Author filter: any author is accepted (no strict bot filter on Everest server).
-Message must have @here OR explicit Buying/Added/Bought/Bougth keyword prefix.
+  SUPER HIGH CONFIDENCE 🚨
+  6/12 $PG 152.5c @.22
+  1000  CONTRACTS
+
+  $100,000 TRADE ALERT 🔥
+  6/12 $PG 152.5c @.09
+  ADDED SUPER HEAVYYY
+
+Core signal line format:
+  {M/D} ${TICKER} {STRIKE}{c/p} @{price}
+  e.g. "6/12 $MCD 290c @.19"  →  MCD 290-strike CALL entry=$0.19 expiry=Jun 12
+
+The M/D date in the signal IS the option expiry date (usually same-day / next-day).
+
+IGNORED messages:
+  - Exits / profit: "SOLD", "+1,000% 🔥", "LEFT RUNNERS"
+  - Ad spam:        "whop.com", "FINAL NOTICE", "FINAL WARNING",
+                    "SHUTTING DOWN", "LIFETIME ACCESS", "FREE ALERTS"
+
+Author filter: any author accepted — the content pattern is the gate.
+Exit strategy: MANUAL — user closes position via dashboard.
 """
 
 from __future__ import annotations
@@ -35,35 +53,47 @@ from core.schemas import (
 
 logger = logging.getLogger("analyst.everest")
 
-# ─── Regex ────────────────────────────────────────────────────────────────────
+# ─── Regex patterns ───────────────────────────────────────────────────────────
 
-# Matches:
-#   @here Buying TSLA 430C at 1.70
-#   Buying SPY 735P at 2.50
-#   Added AAPL 200C at 3.10 exp 06/20
-#   Bought NVDA 1200C at 10.50
-#   Bougth MSFT 455C at 4.80  (typo handled)
-#   @here AMZN 185C at 5.00
-# Optional trailing expiry: exp[iry/ires?]? MM/DD[/YY[YY]]
-_EVEREST_BUY_RE = re.compile(
-    r"(?:@here\s+)?(?:Buy(?:ing)?|Add(?:ed)?|Boug(?:ht|th))\s+"
-    r"([A-Z]{1,5})\s+"
-    r"(\d+(?:\.\d+)?)\s*([CP])\s+"
-    r"(?:at|@)\s+"
-    r"(\d+(?:\.\d+)?)"
-    r"(?:.*?exp(?:iry|ires?)?\s*:?\s*(\d{1,2}/\d{1,2}(?:/\d{2,4})?))?",
-    re.IGNORECASE | re.DOTALL,
+# Core signal line: "6/12 $MCD 290c @.19"
+#   Group 1: expiry date (M/D or M/DD), e.g. "6/12"
+#   Group 2: ticker symbol (without $), e.g. "MCD"
+#   Group 3: strike price, e.g. "290" or "152.5"
+#   Group 4: direction letter, "c" or "p"
+#   Group 5: entry price (digits after @), e.g. ".19" or "2.50"
+_SIGNAL_RE = re.compile(
+    r"(\d{1,2}/\d{1,2})"            # expiry date M/D
+    r"\s+\$([A-Z]{1,5})"            # $TICKER
+    r"\s+(\d+(?:\.\d+)?)"           # strike (e.g. 290 or 152.5)
+    r"\s*([cpCP])"                  # direction: c/C or p/P (touches strike or spaced)
+    r"\s+@(\d*\.?\d+)",             # @price (e.g. @.19 or @2.50)
+    re.IGNORECASE,
 )
 
-# @here-prefixed bare format: "@here TSLA 430C at 1.70"
-_EVEREST_AT_HERE_RE = re.compile(
-    r"@here\s+"
-    r"([A-Z]{1,5})\s+"
-    r"(\d+(?:\.\d+)?)\s*([CP])\s+"
-    r"(?:at|@)\s+"
-    r"(\d+(?:\.\d+)?)"
-    r"(?:.*?exp(?:iry|ires?)?\s*:?\s*(\d{1,2}/\d{1,2}(?:/\d{2,4})?))?",
-    re.IGNORECASE | re.DOTALL,
+# Optional: contract count line (e.g. "1000  CONTRACTS")
+_CONTRACTS_RE = re.compile(
+    r"(\d[\d,]*)\s+CONTRACTS",
+    re.IGNORECASE,
+)
+
+# Confidence label regexes (checked in priority order)
+_SUPER_HIGH_RE   = re.compile(r"SUPER\s+HIGH\s+CONFIDENCE", re.IGNORECASE)
+_HIGH_RE         = re.compile(r"HIGH\s+CONFIDENCE", re.IGNORECASE)
+_TRADE_ALERT_RE  = re.compile(r"\$[\d,]+\s+TRADE\s+ALERT", re.IGNORECASE)  # "$100,000 TRADE ALERT"
+_ADDED_RE        = re.compile(r"\bADDED\b", re.IGNORECASE)
+
+# Fast-reject: any match → not a buy entry
+_REJECT_RE = re.compile(
+    r"\bSOLD\b"                         # exit / profit booking
+    r"|LEFT\s+RUNNERS"                  # partial exit announcement
+    r"|\+[\d,]+%"                       # gain announcement e.g. "+1,000%"
+    r"|whop\.com"                       # promotional spam URL
+    r"|FINAL\s+(?:NOTICE|WARNING)"      # ad spam
+    r"|SHUTTING\s+DOWN"                 # ad spam
+    r"|LIFETIME\s+ACCESS"               # ad spam
+    r"|FREE\s+ALERTS?\s+ARE"            # "Free alerts are PERMANENTLY SHUTTING DOWN"
+    r"|LOCK\s+IN\s+\$\d",              # "lock in $600 LIFETIME ACCESS"
+    re.IGNORECASE,
 )
 
 
@@ -75,56 +105,102 @@ class EverestBuySignal:
     direction: OptionDirection
     strike: float
     price: float
-    expiry: date | None      # None means unknown / treat as same-day
+    expiry: date | None          # parsed from M/D date in signal; None only on parse failure
     channel_id: str
     message_id: str
     raw_content: str
+    confidence: float = 0.70     # dynamic: based on label detected in message
+    contracts: int | None = None # number of contracts stated (informational only)
+    label: str = "UNKNOWN"       # SUPER_HIGH / HIGH / TRADE_ALERT / ADDED / UNKNOWN
+
+
+# ─── Helpers ─────────────────────────────────────────────────────────────────
+
+def _parse_expiry(raw_date: str) -> date | None:
+    """
+    Parse "M/D" or "M/DD" into a date using the current calendar year.
+    Returns None only if the string is malformed (should not happen after regex match).
+    """
+    today = datetime.now(tz=timezone.utc).date()
+    try:
+        return datetime.strptime(f"{raw_date}/{today.year}", "%m/%d/%Y").date()
+    except ValueError:
+        return None
+
+
+def _detect_label(content: str) -> tuple[str, float]:
+    """
+    Detect the confidence label from the message text.
+
+    Returns (label, confidence) where confidence is:
+      SUPER_HIGH   → 0.82   ("SUPER HIGH CONFIDENCE 🚨")
+      HIGH         → 0.74   ("HIGH CONFIDENCE 🎯")
+      TRADE_ALERT  → 0.76   ("$100,000 TRADE ALERT 🔥")
+      ADDED        → 0.68   ("ADDED HEAVY" / "ADDED SUPER HEAVYYY")
+      UNKNOWN      → 0.65   (signal found but no confidence header)
+    """
+    if _SUPER_HIGH_RE.search(content):
+        return "SUPER_HIGH", 0.82
+    if _HIGH_RE.search(content):
+        return "HIGH", 0.74
+    if _TRADE_ALERT_RE.search(content):
+        return "TRADE_ALERT", 0.76
+    if _ADDED_RE.search(content):
+        return "ADDED", 0.68
+    return "UNKNOWN", 0.65
 
 
 # ─── Pure parser (testable without Discord) ───────────────────────────────────
 
 def parse_everest_buy(msg: dict) -> EverestBuySignal | None:
     """
-    Parse an Everest buy message. Returns None if the message is not a buy alert.
+    Parse an Everest channel message and return an EverestBuySignal if it is
+    an option BUY entry. Returns None for exits, profit announcements, spam,
+    and any message that does not contain the signal line pattern.
 
-    Accepts messages from any author (no bot filter on Everest server).
-    Requires either:
-      - An explicit keyword prefix (Buying / Added / Bought / Bougth), OR
-      - An @here prefix followed by SYMBOL strike C/P at price.
+    Expected buy format (multi-line Discord message):
+        HIGH CONFIDENCE 🎯
+        6/12 $MCD 290c @.19
+        1000  CONTRACTS
+
+    Signal line grammar:
+        M/D $TICKER STRIKE{c|p} @PRICE
     """
     content = msg.get("content", "")
     if not content:
         return None
 
-    # Try keyword-prefixed pattern first (most common form)
-    m = _EVEREST_BUY_RE.search(content)
-    if not m:
-        # Try @here-only prefix (no explicit Buy/Add/Bought keyword)
-        m = _EVEREST_AT_HERE_RE.search(content)
+    # Step 1: fast-reject known non-buy patterns
+    if _REJECT_RE.search(content):
+        return None
+
+    # Step 2: match the core signal line
+    m = _SIGNAL_RE.search(content)
     if not m:
         return None
 
-    symbol = m.group(1).upper()
-    strike = float(m.group(2))
-    direction: OptionDirection = "CALL" if m.group(3).upper() == "C" else "PUT"
-    price = float(m.group(4))
+    raw_date  = m.group(1)                       # "6/12"
+    symbol    = m.group(2).upper()               # "MCD"
+    strike    = float(m.group(3))                # 290.0
+    direction: OptionDirection = (
+        "CALL" if m.group(4).upper() == "C" else "PUT"
+    )
+    price = float(m.group(5))                    # 0.19
 
-    expiry: date | None = None
-    raw_exp = m.group(5)
-    if raw_exp:
-        raw_exp = raw_exp.strip()
-        today = datetime.now(tz=timezone.utc).date()
-        # Try MM/DD/YYYY then MM/DD/YY then MM/DD (inject current year to avoid ambiguity)
-        for fmt, raw_to_parse in (
-            ("%m/%d/%Y", raw_exp),
-            ("%m/%d/%y", raw_exp),
-            ("%m/%d/%Y", f"{raw_exp}/{today.year}"),  # MM/DD → MM/DD/YYYY
-        ):
-            try:
-                expiry = datetime.strptime(raw_to_parse, fmt).date()
-                break
-            except ValueError:
-                continue
+    # Step 3: parse expiry from the date in the signal line
+    expiry = _parse_expiry(raw_date)
+
+    # Step 4: optional contract count
+    contracts: int | None = None
+    cm = _CONTRACTS_RE.search(content)
+    if cm:
+        try:
+            contracts = int(cm.group(1).replace(",", ""))
+        except ValueError:
+            pass
+
+    # Step 5: detect label & dynamic confidence
+    label, confidence = _detect_label(content)
 
     return EverestBuySignal(
         symbol=symbol,
@@ -135,6 +211,9 @@ def parse_everest_buy(msg: dict) -> EverestBuySignal | None:
         channel_id=msg.get("channel_id", ""),
         message_id=msg.get("message_id", ""),
         raw_content=content,
+        confidence=confidence,
+        contracts=contracts,
+        label=label,
     )
 
 
@@ -142,17 +221,22 @@ def parse_everest_buy(msg: dict) -> EverestBuySignal | None:
 
 class EverestAnalyst(BaseAnalyst):
     """
-    Listens to the Everest Discord channel. Emits TradeSignal on every buy alert.
-    Exit strategy: MANUAL — user closes via dashboard. No auto-close ever fires.
+    Listens to the Everest Discord channel. Emits a TradeSignal for every
+    option BUY entry posted by optionsbuftett. Exit strategy: MANUAL — user
+    closes position via dashboard. No auto-close ever fires.
 
-    Confidence is fixed at 0.70 (Everest is a human posting general alerts;
-    no secondary confirmation is available from this source).
+    Confidence is dynamic (0.65–0.82) based on the label in the message:
+      SUPER HIGH CONFIDENCE → 0.82
+      $X TRADE ALERT        → 0.76
+      HIGH CONFIDENCE       → 0.74
+      ADDED [HEAVY]         → 0.68  (position addition; may be an average-down)
+      (no label)            → 0.65
     """
 
     analyst_id = "everest"
     source_layer = "DISCORD"
     exit_rules = ExitRules(strategy="MANUAL")
-    confidence_threshold = 0.65
+    confidence_threshold = 0.60   # accept all labels including ADDED
 
     def __init__(
         self,
@@ -161,7 +245,7 @@ class EverestAnalyst(BaseAnalyst):
         *,
         execution_buffer_pct: float = 0.20,
         max_premium_usd: float = 800.0,
-        confidence_threshold: float = 0.65,
+        confidence_threshold: float = 0.60,
     ) -> None:
         super().__init__(
             analyst_id=self.analyst_id,
@@ -176,15 +260,16 @@ class EverestAnalyst(BaseAnalyst):
         self._execution_buffer_pct = execution_buffer_pct
         self._max_premium_usd = max_premium_usd
         self._msg_queue: asyncio.Queue[dict] = asyncio.Queue()
+        self._last_confidence: float = 0.65   # updated per-message in _process
 
     @property
     def message_queue(self) -> "asyncio.Queue[dict]":
-        """The gateway puts Discord messages here."""
+        """The Discord gateway puts raw message dicts here."""
         return self._msg_queue
 
     async def run(self) -> None:
         self._running = True
-        self._log.info("EverestAnalyst starting")
+        self._log.info("EverestAnalyst starting — channel=%s", self._channel_id)
         import core.redis_client as rc
         asyncio.create_task(
             rc.heartbeat_loop(self.analyst_id, interval_seconds=30),
@@ -221,12 +306,14 @@ class EverestAnalyst(BaseAnalyst):
         buy: EverestBuySignal = raw_data
         premium = buy.price * 100
 
-        evidence = [
+        return [
             Evidence(
                 indicator="everest_buy_signal",
                 value=buy.raw_content[:200],
                 interpretation=(
-                    f"Everest alert: {buy.symbol} {buy.strike}{buy.direction[0]} at ${buy.price}"
+                    f"Everest [{buy.label}]: {buy.symbol} "
+                    f"{buy.strike}{buy.direction[0]} @ ${buy.price:.2f}"
+                    + (f" × {buy.contracts:,} contracts" if buy.contracts else "")
                 ),
                 weight=0.90,
                 bullish=(buy.direction == "CALL"),
@@ -237,14 +324,12 @@ class EverestAnalyst(BaseAnalyst):
                 interpretation=(
                     f"Premium ${premium:.0f}/contract — "
                     f"{'within' if premium <= self._max_premium_usd else 'exceeds'} "
-                    f"${self._max_premium_usd:.0f} limit"
+                    f"${self._max_premium_usd:.0f} max"
                 ),
                 weight=0.10,
                 bullish=(premium <= self._max_premium_usd),
             ),
         ]
-
-        return evidence
 
     async def select_contract(
         self, evidence: list[Evidence], raw_data: Any
@@ -278,8 +363,8 @@ class EverestAnalyst(BaseAnalyst):
         )
 
     def compute_confidence(self, evidence: list[Evidence]) -> float:
-        # Everest is a human analyst — fixed moderate confidence.
-        return 0.70
+        """Return the dynamic confidence cached from the last parsed signal."""
+        return self._last_confidence
 
     async def _process(self, trigger: WakeEvent) -> None:
         from core.kill_switch import is_blocked
@@ -295,6 +380,8 @@ class EverestAnalyst(BaseAnalyst):
             return
 
         buy: EverestBuySignal = raw_data
+        self._last_confidence = buy.confidence   # cache for compute_confidence
+
         evidence = await self.build_evidence(buy)
         if not evidence:
             return
@@ -303,9 +390,10 @@ class EverestAnalyst(BaseAnalyst):
         if contract is None:
             return
 
+        # Dedup within 5-minute window: same symbol + strike + direction
         dedup_key = f"{self.analyst_id}:{buy.symbol}:{buy.strike}:{buy.direction}"
         if dedup_key in self._seen_signal_keys:
-            self._log.info("Duplicate buy suppressed: %s", dedup_key)
+            self._log.info("Duplicate suppressed: %s", dedup_key)
             return
         self._seen_signal_keys.add(dedup_key)
         asyncio.create_task(self._clear_dedup(dedup_key, delay=300))
@@ -322,12 +410,14 @@ class EverestAnalyst(BaseAnalyst):
             signal_price=buy.price,
             evidence=evidence,
             risk_level="MEDIUM",
-            confidence=0.70,
+            confidence=buy.confidence,
             exit_rules=self.exit_rules,
             source_metadata={
-                "message_id": buy.message_id,
-                "channel_id": buy.channel_id,
-                "raw": buy.raw_content[:300],
+                "message_id":           buy.message_id,
+                "channel_id":           buy.channel_id,
+                "label":                buy.label,
+                "contracts":            buy.contracts,
+                "raw":                  buy.raw_content[:300],
                 "execution_buffer_pct": self._execution_buffer_pct,
             },
         )
@@ -338,15 +428,20 @@ class EverestAnalyst(BaseAnalyst):
             self.analyst_id,
             signal.signal_id,
             extra={
-                "symbol": signal.symbol,
-                "direction": signal.direction,
-                "strike": signal.strike,
-                "expiry": str(signal.expiry),
+                "symbol":     signal.symbol,
+                "direction":  signal.direction,
+                "strike":     signal.strike,
+                "expiry":     str(signal.expiry),
                 "confidence": signal.confidence,
+                "label":      buy.label,
             },
         )
         self._log.info(
-            "Signal emitted: %s %s %.0f exp=%s @ $%.2f",
-            signal.symbol, signal.direction, signal.strike,
-            signal.expiry, signal.signal_price,
+            "Signal emitted: [%s] %s %s %.1f exp=%s @ $%.2f",
+            buy.label,
+            signal.symbol,
+            signal.direction,
+            signal.strike,
+            signal.expiry,
+            signal.signal_price,
         )

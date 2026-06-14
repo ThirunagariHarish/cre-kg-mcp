@@ -1,13 +1,20 @@
 """
-Tests for analysts/discord/everest.py parser function.
+Tests for analysts/discord/everest.py — Everest parser.
 
-All tests use synthetic message dicts that mirror the Discord format.
-No live Discord connection required — pure unit tests.
+All tests use synthetic message dicts that mirror the actual Discord format
+from the optionsbuftett trader in the Everest channel.
+
+Real channel message format:
+    HIGH CONFIDENCE 🎯
+    6/12 $MCD 290c @.19
+    1000  CONTRACTS
+
+No live Discord connection required — pure unit tests on parse_everest_buy().
 """
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 
 import pytest
 
@@ -16,12 +23,12 @@ from analysts.discord.everest import EverestBuySignal, parse_everest_buy
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
-def _msg(content: str, author: str = "EverestTrader", *, is_bot: bool = False) -> dict:
+def _msg(content: str, author: str = "optionsbuftett", *, is_bot: bool = False) -> dict:
     return {
-        "message_id": "333",
-        "channel_id": "9999999999999999999",
-        "timestamp": "2026-06-13T14:00:00+00:00",
-        "author_id": "5001",
+        "message_id": "111222333444",
+        "channel_id": "1509430306749550653",
+        "timestamp": "2026-06-14T09:00:00+00:00",
+        "author_id": "9001",
         "author_name": author,
         "author_global_name": author,
         "is_bot": is_bot,
@@ -31,220 +38,330 @@ def _msg(content: str, author: str = "EverestTrader", *, is_bot: bool = False) -
     }
 
 
-# ─── Buy pattern tests ────────────────────────────────────────────────────────
+_TODAY_YEAR = datetime.now(tz=timezone.utc).year
 
-class TestParseEverestBuy:
 
-    # --- "Buying" keyword ---
+# ─── Buy signal: happy-path parsing ───────────────────────────────────────────
 
-    def test_buying_call(self) -> None:
-        msg = _msg("Buying TSLA 430C at 1.70")
-        sig = parse_everest_buy(msg)
+class TestParseBuySignal:
+    """Core signal line parsing: M/D $TICKER STRIKE{c|p} @PRICE"""
+
+    def test_high_confidence_call(self) -> None:
+        """Canonical HIGH CONFIDENCE multi-line message — call option."""
+        content = "HIGH CONFIDENCE 🎯\n6/12 $MCD 290c @.19\n1000  CONTRACTS @everyone"
+        sig = parse_everest_buy(_msg(content))
         assert sig is not None
-        assert sig.symbol == "TSLA"
+        assert sig.symbol == "MCD"
         assert sig.direction == "CALL"
-        assert sig.strike == 430.0
-        assert sig.price == 1.70
+        assert sig.strike == 290.0
+        assert sig.price == 0.19
 
-    def test_buying_put(self) -> None:
-        msg = _msg("Buying SPY 735P at 2.50")
-        sig = parse_everest_buy(msg)
+    def test_super_high_confidence_call(self) -> None:
+        """SUPER HIGH CONFIDENCE variant."""
+        content = "SUPER HIGH CONFIDENCE 🚨\n6/12 $PG 152.5c @.12\n1000  CONTRACTS"
+        sig = parse_everest_buy(_msg(content))
         assert sig is not None
+        assert sig.symbol == "PG"
+        assert sig.direction == "CALL"
+        assert sig.strike == 152.5
+        assert sig.price == 0.12
+
+    def test_added_heavy_call(self) -> None:
+        """ADDED HEAVYYYY position-addition message."""
+        content = "ADDED HEAVYYYY\n6/12 $PG 152.5c @.11\n1000  CONTRACTS @everyone"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.symbol == "PG"
+        assert sig.strike == 152.5
+        assert sig.price == 0.11
+
+    def test_trade_alert_format(self) -> None:
+        """$100,000 TRADE ALERT style message."""
+        content = "$100,000 TRADE ALERT 🔥\n6/12 $PG 152.5c @.09\nADDED SUPER HEAVYYY"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.symbol == "PG"
+        assert sig.price == 0.09
+
+    def test_put_option(self) -> None:
+        """Put option direction parsed correctly."""
+        content = "HIGH CONFIDENCE 🎯\n6/14 $SPY 530p @.45"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.direction == "PUT"
         assert sig.symbol == "SPY"
-        assert sig.direction == "PUT"
-        assert sig.strike == 735.0
-        assert sig.price == 2.50
+        assert sig.strike == 530.0
+        assert sig.price == 0.45
 
-    def test_buying_with_at_sign(self) -> None:
-        """'@' as alias for 'at' in price."""
-        msg = _msg("Buying AAPL 200C @ 3.10")
-        sig = parse_everest_buy(msg)
+    def test_uppercase_direction_letter(self) -> None:
+        """Direction letter C/P (uppercase) also accepted."""
+        content = "HIGH CONFIDENCE 🎯\n6/14 $AAPL 200C @3.10"
+        sig = parse_everest_buy(_msg(content))
         assert sig is not None
-        assert sig.symbol == "AAPL"
-        assert sig.strike == 200.0
+        assert sig.direction == "CALL"
         assert sig.price == 3.10
-
-    def test_buying_with_expiry(self) -> None:
-        msg = _msg("Buying MSFT 455C at 4.80 exp 06/20/2026")
-        sig = parse_everest_buy(msg)
-        assert sig is not None
-        assert sig.expiry == date(2026, 6, 20)
-
-    def test_buying_without_expiry(self) -> None:
-        msg = _msg("Buying NVDA 1200C at 10.50")
-        sig = parse_everest_buy(msg)
-        assert sig is not None
-        assert sig.expiry is None
-
-    # --- "Added" / "Add" keyword ---
-
-    def test_added_call(self) -> None:
-        msg = _msg("Added AMD 180C at 1.20")
-        sig = parse_everest_buy(msg)
-        assert sig is not None
-        assert sig.symbol == "AMD"
-        assert sig.direction == "CALL"
-        assert sig.strike == 180.0
-        assert sig.price == 1.20
-
-    def test_added_with_exp_keyword(self) -> None:
-        msg = _msg("Added AMZN 185C at 5.00 exp 06/27")
-        sig = parse_everest_buy(msg)
-        assert sig is not None
-        assert sig.symbol == "AMZN"
-        # Expiry parsed as MM/DD with current year
-        assert sig.expiry is not None
-        assert sig.expiry.month == 6
-        assert sig.expiry.day == 27
-
-    # --- "Bought" / "Bougth" keyword ---
-
-    def test_bought_basic(self) -> None:
-        msg = _msg("Bought QQQ 480P at 3.40")
-        sig = parse_everest_buy(msg)
-        assert sig is not None
-        assert sig.symbol == "QQQ"
-        assert sig.direction == "PUT"
-        assert sig.strike == 480.0
-        assert sig.price == 3.40
-
-    def test_bougth_typo(self) -> None:
-        """Common typo 'Bougth' must be handled identically to 'Bought'."""
-        msg = _msg("Bougth TSLA 440C at 2.10")
-        sig = parse_everest_buy(msg)
-        assert sig is not None
-        assert sig.symbol == "TSLA"
-        assert sig.direction == "CALL"
-        assert sig.strike == 440.0
-        assert sig.price == 2.10
-
-    # --- @here prefix (no explicit keyword) ---
-
-    def test_at_here_prefix(self) -> None:
-        msg = _msg("@here AAPL 200C at 3.10")
-        sig = parse_everest_buy(msg)
-        assert sig is not None
-        assert sig.symbol == "AAPL"
-        assert sig.direction == "CALL"
-        assert sig.strike == 200.0
-        assert sig.price == 3.10
-
-    def test_at_here_with_buying_keyword(self) -> None:
-        msg = _msg("@here Buying SPX 5500C at 8.00")
-        sig = parse_everest_buy(msg)
-        assert sig is not None
-        assert sig.symbol == "SPX"
-        assert sig.strike == 5500.0
-
-    def test_at_here_put(self) -> None:
-        msg = _msg("@here SPY 740P at 1.80")
-        sig = parse_everest_buy(msg)
-        assert sig is not None
-        assert sig.direction == "PUT"
-        assert sig.price == 1.80
-
-    # --- Expiry parsing ---
-
-    def test_expiry_full_date(self) -> None:
-        msg = _msg("Buying TSLA 430C at 1.70 expiry 07/18/2026")
-        sig = parse_everest_buy(msg)
-        assert sig is not None
-        assert sig.expiry == date(2026, 7, 18)
-
-    def test_expiry_two_digit_year(self) -> None:
-        msg = _msg("Buying TSLA 430C at 1.70 exp 07/18/26")
-        sig = parse_everest_buy(msg)
-        assert sig is not None
-        assert sig.expiry is not None
-        assert sig.expiry.month == 7
-        assert sig.expiry.day == 18
-
-    def test_expiry_mm_dd_only(self) -> None:
-        msg = _msg("Buying AAPL 200C at 3.00 exp 08/15")
-        sig = parse_everest_buy(msg)
-        assert sig is not None
-        assert sig.expiry is not None
-        today_year = datetime.now(tz=timezone.utc).year
-        assert sig.expiry.year == today_year
-        assert sig.expiry.month == 8
-        assert sig.expiry.day == 15
-
-    # --- Decimal strike ---
 
     def test_decimal_strike(self) -> None:
-        msg = _msg("Buying SPX 5525.5C at 4.20")
-        sig = parse_everest_buy(msg)
+        """Decimal strikes like 152.5c parsed correctly."""
+        content = "SUPER HIGH CONFIDENCE 🚨\n6/12 $PG 152.5c @.22\n1000  CONTRACTS"
+        sig = parse_everest_buy(_msg(content))
         assert sig is not None
-        assert sig.strike == 5525.5
+        assert sig.strike == 152.5
 
-    # --- Non-matching messages return None ---
+    def test_price_without_leading_digit(self) -> None:
+        """Sub-penny prices like @.09 (no leading zero) parsed correctly."""
+        content = "HIGH CONFIDENCE 🎯\n6/12 $MCD 290c @.09"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.price == pytest.approx(0.09)
 
-    def test_no_buy_keyword_no_at_here(self) -> None:
-        """No prefix and no @here — must return None."""
-        msg = _msg("TSLA 430C at 1.70")
-        assert parse_everest_buy(msg) is None
+    def test_whole_dollar_price(self) -> None:
+        """Prices >= $1 like @2.50 parsed correctly."""
+        content = "HIGH CONFIDENCE 🎯\n6/14 $TSLA 185c @2.50"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.price == 2.50
 
-    def test_plain_commentary(self) -> None:
-        msg = _msg("Watching TSLA closely, might buy if it breaks 430")
-        assert parse_everest_buy(msg) is None
+    def test_no_contracts_line_still_parsed(self) -> None:
+        """Signal line without a CONTRACTS line is still valid."""
+        content = "SUPER HIGH CONFIDENCE 🚨\n6/12 $MCD 290c @.22"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.contracts is None
 
-    def test_sell_message_not_matched(self) -> None:
-        msg = _msg("Sold TSLA 430C at 3.20")
-        assert parse_everest_buy(msg) is None
+
+# ─── Expiry parsing ───────────────────────────────────────────────────────────
+
+class TestExpiryParsing:
+
+    def test_expiry_parsed_from_signal_date(self) -> None:
+        """The M/D date in the signal line becomes the expiry date."""
+        content = "HIGH CONFIDENCE 🎯\n6/12 $MCD 290c @.19"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.expiry is not None
+        assert sig.expiry.month == 6
+        assert sig.expiry.day == 12
+        assert sig.expiry.year == _TODAY_YEAR
+
+    def test_expiry_single_digit_day(self) -> None:
+        """M/D with single digit day (e.g. 6/5) parsed correctly."""
+        content = "HIGH CONFIDENCE 🎯\n6/5 $NVDA 130c @.88"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.expiry is not None
+        assert sig.expiry.month == 6
+        assert sig.expiry.day == 5
+
+    def test_expiry_double_digit_month_and_day(self) -> None:
+        """Date like 12/20 still parsed correctly."""
+        content = "HIGH CONFIDENCE 🎯\n12/20 $QQQ 480p @1.20"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.expiry is not None
+        assert sig.expiry.month == 12
+        assert sig.expiry.day == 20
+
+
+# ─── Contract count parsing ───────────────────────────────────────────────────
+
+class TestContractCount:
+
+    def test_contract_count_parsed(self) -> None:
+        """1000 CONTRACTS extracted as integer."""
+        content = "HIGH CONFIDENCE 🎯\n6/12 $MCD 290c @.19\n1000  CONTRACTS"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.contracts == 1000
+
+    def test_contract_count_not_present(self) -> None:
+        """Missing CONTRACTS line → contracts=None."""
+        content = "HIGH CONFIDENCE 🎯\n6/12 $MCD 290c @.19"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.contracts is None
+
+
+# ─── Confidence label detection ───────────────────────────────────────────────
+
+class TestConfidenceLabel:
+
+    def test_super_high_label_and_confidence(self) -> None:
+        content = "SUPER HIGH CONFIDENCE 🚨\n6/12 $PG 152.5c @.12"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.label == "SUPER_HIGH"
+        assert sig.confidence == pytest.approx(0.82)
+
+    def test_high_label_and_confidence(self) -> None:
+        content = "HIGH CONFIDENCE 🎯\n6/12 $MCD 290c @.19"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.label == "HIGH"
+        assert sig.confidence == pytest.approx(0.74)
+
+    def test_trade_alert_label_and_confidence(self) -> None:
+        content = "$100,000 TRADE ALERT 🔥\n6/12 $PG 152.5c @.09\nADDED SUPER HEAVYYY"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.label == "TRADE_ALERT"
+        assert sig.confidence == pytest.approx(0.76)
+
+    def test_added_label_and_confidence(self) -> None:
+        content = "ADDED HEAVYYYY\n6/12 $PG 152.5c @.11\n1000  CONTRACTS"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.label == "ADDED"
+        assert sig.confidence == pytest.approx(0.68)
+
+    def test_unknown_label_and_confidence(self) -> None:
+        """No confidence header → UNKNOWN label, lowest confidence."""
+        content = "6/12 $MCD 290c @.19"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.label == "UNKNOWN"
+        assert sig.confidence == pytest.approx(0.65)
+
+    def test_super_high_takes_priority_over_high(self) -> None:
+        """SUPER HIGH CONFIDENCE must not fall through to HIGH CONFIDENCE."""
+        content = "SUPER HIGH CONFIDENCE 🚨\n6/12 $PG 152.5c @.22"
+        sig = parse_everest_buy(_msg(content))
+        assert sig is not None
+        assert sig.label == "SUPER_HIGH"
+
+
+# ─── Reject: exits and profit announcements ───────────────────────────────────
+
+class TestRejectExits:
+
+    def test_reject_sold_message(self) -> None:
+        """SOLD keyword → exit message, must return None."""
+        content = "$TGT @1.35 +1,000% 🔥🔥🔥\nSOLD MOST , LEFT RUNNERS"
+        assert parse_everest_buy(_msg(content)) is None
+
+    def test_reject_left_runners(self) -> None:
+        content = "SOLD MOST, LEFT RUNNERS"
+        assert parse_everest_buy(_msg(content)) is None
+
+    def test_reject_gain_percentage(self) -> None:
+        """+1,000% in message → profit announcement, must return None."""
+        content = "$TGT @1.35 +1,000% 🔥🔥🔥"
+        assert parse_everest_buy(_msg(content)) is None
+
+    def test_reject_message_with_sold_even_if_signal_present(self) -> None:
+        """If SOLD appears anywhere in message, reject regardless of signal line."""
+        content = "HIGH CONFIDENCE 🎯\n6/12 $MCD 290c @.19\nSOLD ALREADY"
+        assert parse_everest_buy(_msg(content)) is None
+
+
+# ─── Reject: promotional spam ─────────────────────────────────────────────────
+
+class TestRejectSpam:
+
+    def test_reject_whop_url(self) -> None:
+        content = "TODAY is your LAST CHANCE to lock in $600 LIFETIME ACCESS...\nhttps://whop.com/everest"
+        assert parse_everest_buy(_msg(content)) is None
+
+    def test_reject_final_notice(self) -> None:
+        content = "🚨 FINAL NOTICE 🚨 Free alerts are PERMANENTLY SHUTTING DOWN..."
+        assert parse_everest_buy(_msg(content)) is None
+
+    def test_reject_final_warning(self) -> None:
+        content = "FINAL WARNING — this is your last chance to join"
+        assert parse_everest_buy(_msg(content)) is None
+
+    def test_reject_shutting_down(self) -> None:
+        content = "Free alerts are PERMANENTLY SHUTTING DOWN after tonight"
+        assert parse_everest_buy(_msg(content)) is None
+
+    def test_reject_lifetime_access(self) -> None:
+        content = "Lock in $600 LIFETIME ACCESS before midnight"
+        assert parse_everest_buy(_msg(content)) is None
+
+    def test_reject_free_alerts_are(self) -> None:
+        content = "FREE ALERTS ARE being shut down permanently 🚨"
+        assert parse_everest_buy(_msg(content)) is None
+
+
+# ─── Reject: non-signal messages ─────────────────────────────────────────────
+
+class TestRejectNoSignal:
 
     def test_empty_content_returns_none(self) -> None:
-        msg = _msg("")
-        assert parse_everest_buy(msg) is None
+        assert parse_everest_buy(_msg("")) is None
 
     def test_missing_content_key_returns_none(self) -> None:
-        msg = {
-            "message_id": "000",
-            "channel_id": "9999",
-        }
-        assert parse_everest_buy(msg) is None
+        assert parse_everest_buy({"message_id": "000", "channel_id": "9999"}) is None
 
-    def test_price_analysis_commentary(self) -> None:
-        """'Looking at 430C' must not match — no buy action word."""
-        msg = _msg("Looking at TSLA 430C, might be good at 1.70")
-        assert parse_everest_buy(msg) is None
+    def test_plain_commentary(self) -> None:
+        assert parse_everest_buy(_msg("Watching MCD, might play it later")) is None
 
-    def test_stoploss_commentary_not_matched(self) -> None:
-        msg = _msg("Stop at 1.20 on TSLA 430C")
-        assert parse_everest_buy(msg) is None
+    def test_missing_at_price(self) -> None:
+        """Signal line without @price should NOT match."""
+        assert parse_everest_buy(_msg("6/12 $MCD 290c")) is None
 
-    # --- Author filter: any author accepted ---
+    def test_missing_dollar_ticker(self) -> None:
+        """Signal line without $ prefix on ticker should NOT match."""
+        assert parse_everest_buy(_msg("6/12 MCD 290c @.19")) is None
 
-    def test_any_author_accepted(self) -> None:
-        """Everest has no bot filter — any author is accepted."""
-        msg = _msg("Buying TSLA 430C at 1.70", author="RandomUser123")
-        sig = parse_everest_buy(msg)
+    def test_missing_date_prefix(self) -> None:
+        """Signal line without date should NOT match."""
+        assert parse_everest_buy(_msg("$MCD 290c @.19")) is None
+
+    def test_emoji_only_message(self) -> None:
+        assert parse_everest_buy(_msg("🔥🔥🔥")) is None
+
+    def test_generic_market_comment(self) -> None:
+        assert parse_everest_buy(_msg("Market looking strong today. SPY could rip.")) is None
+
+
+# ─── Author filter ────────────────────────────────────────────────────────────
+
+class TestAuthorFilter:
+    """Any author is accepted — the content pattern is the only gate."""
+
+    def test_expected_author_optionsbuftett(self) -> None:
+        content = "HIGH CONFIDENCE 🎯\n6/12 $MCD 290c @.19"
+        sig = parse_everest_buy(_msg(content, author="optionsbuftett"))
+        assert sig is not None
+
+    def test_any_other_author_also_accepted(self) -> None:
+        """No author restriction — content pattern gates."""
+        content = "HIGH CONFIDENCE 🎯\n6/12 $MCD 290c @.19"
+        sig = parse_everest_buy(_msg(content, author="warrenbuffett."))
         assert sig is not None
 
     def test_bot_author_accepted(self) -> None:
-        """Bot messages are also accepted."""
-        msg = _msg("Buying TSLA 430C at 1.70", author="SomeBot", is_bot=True)
-        sig = parse_everest_buy(msg)
+        content = "HIGH CONFIDENCE 🎯\n6/12 $MCD 290c @.19"
+        sig = parse_everest_buy(_msg(content, author="SomeBot", is_bot=True))
         assert sig is not None
 
-    # --- Message metadata propagation ---
+
+# ─── Metadata propagation ─────────────────────────────────────────────────────
+
+class TestMetadataPropagation:
 
     def test_channel_id_propagated(self) -> None:
-        msg = _msg("Buying TSLA 430C at 1.70")
-        msg["channel_id"] = "8888777766665555"
+        msg = _msg("HIGH CONFIDENCE 🎯\n6/12 $MCD 290c @.19")
+        msg["channel_id"] = "1509430306749550653"
         sig = parse_everest_buy(msg)
         assert sig is not None
-        assert sig.channel_id == "8888777766665555"
+        assert sig.channel_id == "1509430306749550653"
 
     def test_message_id_propagated(self) -> None:
-        msg = _msg("Buying TSLA 430C at 1.70")
-        msg["message_id"] = "111222333"
+        msg = _msg("HIGH CONFIDENCE 🎯\n6/12 $MCD 290c @.19")
+        msg["message_id"] = "987654321"
         sig = parse_everest_buy(msg)
         assert sig is not None
-        assert sig.message_id == "111222333"
+        assert sig.message_id == "987654321"
 
     def test_raw_content_propagated(self) -> None:
-        content = "Buying TSLA 430C at 1.70 exp 06/20/2026"
-        msg = _msg(content)
-        sig = parse_everest_buy(msg)
+        content = "HIGH CONFIDENCE 🎯\n6/12 $MCD 290c @.19\n1000  CONTRACTS"
+        sig = parse_everest_buy(_msg(content))
         assert sig is not None
         assert sig.raw_content == content
+
+    def test_returns_everest_buy_signal_type(self) -> None:
+        content = "HIGH CONFIDENCE 🎯\n6/12 $MCD 290c @.19"
+        sig = parse_everest_buy(_msg(content))
+        assert isinstance(sig, EverestBuySignal)
