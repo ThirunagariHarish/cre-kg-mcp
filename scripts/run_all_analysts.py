@@ -106,6 +106,7 @@ async def run(paper_mode: bool) -> None:
     """
     Main async entry point.  Shared with run_discord_gateway for import compatibility.
     """
+    from core.redis_client import init_redis, close_redis
     from analysts.discord.gateway import DiscordGateway
     from analysts.discord.vinod import VinodSPXAnalyst, VinodOtherAnalyst
     from analysts.discord.albert import AlbertAnalyst
@@ -117,6 +118,13 @@ async def run(paper_mode: bool) -> None:
     from gateway.monitor_agent import MonitorAgent
     from gateway.rh_gateway import RHGateway
     from core.schemas import TradeSignal
+
+    # ── Redis (must be first — heartbeat loops start inside analysts) ─────────
+    redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    try:
+        await init_redis(redis_url)
+    except Exception as exc:
+        logger.warning("Redis unavailable (%s) — heartbeats will be skipped", exc)
 
     token     = os.environ["DISCORD_BOT_TOKEN"]
     server_id = os.environ.get("DISCORD_SERVER_ID", "")
@@ -261,6 +269,7 @@ async def run(paper_mode: bool) -> None:
     async def shutdown_watcher() -> None:
         await stop_event.wait()
         await discord_gateway.close()
+        await close_redis()
 
     configured_count = sum(
         1 for ch, _ in analysts
