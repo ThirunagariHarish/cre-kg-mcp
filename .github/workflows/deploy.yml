@@ -19,7 +19,9 @@ jobs:
       packages: write
 
     outputs:
-      image_tag: ${{ steps.meta.outputs.version }}
+      # Use short SHA directly — meta.outputs.version returns 'latest' on main,
+      # which means kustomize sees no diff and pods never restart.
+      image_tag: ${{ github.sha }}
 
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +43,7 @@ jobs:
         with:
           images: ${{ env.IMAGE }}
           tags: |
-            type=sha,prefix=,format=short
+            type=raw,value=${{ github.sha }}
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
@@ -92,6 +94,8 @@ jobs:
           kustomize edit set image ghcr.io/thirunagariharish/analyst-team=ghcr.io/thirunagariharish/analyst-team:$IMAGE_TAG
           cd ../..
           kubectl apply -k k8s/analyst-team/
+          # Force restart so pods always pull the new image (image tag changed in kustomize)
+          kubectl rollout restart deployment/analyst-team-dashboard deployment/analyst-team-bot -n analyst-team
           kubectl rollout status deployment/analyst-team-dashboard -n analyst-team --timeout=180s
           kubectl rollout status deployment/analyst-team-bot -n analyst-team --timeout=180s
           echo "=== Deployed: $IMAGE_TAG ==="
